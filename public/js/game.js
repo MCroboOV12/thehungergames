@@ -179,7 +179,7 @@ const charactersData = {
   en: [
     { name: 'Katniss Everdeen', desc: 'The 16-year-old protagonist. She volunteers as tribute to save her younger sister Prim. A brilliant archer and survivalist.' },
     { name: 'Peeta Mellark', desc: 'The male tribute from District 12. Kind-hearted, empathetic, and in love with Katniss since childhood. A skilled baker and camouflage artist.' },
-    { name: 'Gale Hawthorne', desc: 'Katniss\' best friend and hunting partner. Brave, rebellious, and hates the Capitol. Later becomes a symbol of the rebellion.' },
+    { name: 'Gale Hawthorne', desc: 'Katniss\' best friend and hunting partner. Brave, rebellious, and hates the Capitol. And he also loves Katniss.' },
     { name: 'Haymitch Abernathy', desc: 'The only living victor from District 12. An alcoholic but strategically brilliant mentor for Katniss and Peeta.' },
     { name: 'Effie Trinket', desc: 'The extravagant Capitol escort who accompanies Katniss and Peeta to the Games. Loves flashy fashion and etiquette.' },
     { name: 'Rue', desc: 'The 12-year-old tribute from District 11. Small and agile, she reminds Katniss of her sister Prim. They form an alliance.' },
