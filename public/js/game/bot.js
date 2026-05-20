@@ -85,7 +85,8 @@ class Bot extends Entity {
     if (this.hp / this.maxHp < this.retreatThreshold) {
       this.state = 'retreat';
     } else if (dist < this.detectionRange) {
-      if (dist < this.attackRange && this._hasWeapon()) {
+      const hasRanged = this._hasRangedWeapon();
+      if (this._hasWeapon() && (dist < this.attackRange || hasRanged)) {
         this.state = 'attack';
       } else {
         this.state = 'chase';
@@ -272,6 +273,10 @@ class Bot extends Entity {
 
   _hasWeapon() {
     return this.inventory.some(i => i && ['Sword', 'Axe', 'Knife', 'Bow'].includes(i.name));
+  }
+
+  _hasRangedWeapon() {
+    return this.inventory.some(i => i && ['Bow', 'Knife'].includes(i.name));
   }
 
   _hasEmptySlot() {
