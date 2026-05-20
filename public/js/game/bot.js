@@ -1,11 +1,12 @@
 class Bot extends Entity {
-  constructor(x, y) {
+  constructor(x, y, index) {
     super(x, y, 32, 48);
-    this.color = '#8d6e63';
+    this.index = index;
+    this.color = BOT_COLORS[index % BOT_COLORS.length];
     this.hp = 100;
     this.maxHp = 100;
     this.hurtTimer = 0;
-    this.speed = 120;
+    this.speed = 100 + Math.random() * 40;
     this.detectionRange = 250;
     this.attackRange = 60;
     this.state = 'wander';
@@ -16,18 +17,19 @@ class Bot extends Entity {
     this.selectedSlot = 0;
     this.retreatThreshold = 0.3;
     this.alive = true;
-    this.respawnTimer = 0;
+    this.lastDamagedBy = null;
+    this.stormRadius = ARENA_RADIUS;
   }
 
-  takeDamage(amount, items) {
+  takeDamage(amount, source) {
+    if (!this.alive) return;
     this.hp = Math.max(0, this.hp - amount);
     this.hurtTimer = 0.15;
+    this.lastDamagedBy = source;
     if (this.hp <= 0) {
       this.alive = false;
-      this.respawnTimer = 5;
       this.vx = 0;
       this.vy = 0;
-      if (items) this._dropItems(items);
     }
   }
 
@@ -46,47 +48,63 @@ class Bot extends Entity {
     this.inventory = [null, null, null];
   }
 
-  respawn() {
-    const angle = Math.random() * Math.PI * 2;
-    const r = Math.sqrt(Math.random()) * 500 + 100;
-    this.x = ARENA_CX + Math.cos(angle) * r - this.width / 2;
-    this.y = ARENA_CY + Math.sin(angle) * r - this.height / 2;
-    this.hp = this.maxHp;
-    this.hurtTimer = 0;
-    this.alive = true;
-    this.state = 'wander';
-    this.stateTimer = 0;
-    this.wanderTarget = null;
-    this.attackCooldown = 0;
-    this.inventory = [null, null, null];
+  getNearestTarget(player, bots) {
+    let best = { x: player.x + player.width / 2, y: player.y + player.height / 2, dist: Infinity };
+    const bx = this.x + this.width / 2;
+    const by = this.y + this.height / 2;
+    const candidates = [{ x: player.x + player.width / 2, y: player.y + player.height / 2, alive: true }];
+    for (const b of bots) {
+      if (b === this || !b.alive) continue;
+      candidates.push({ x: b.x + b.width / 2, y: b.y + b.height / 2, alive: true });
+    }
+    for (const c of candidates) {
+      const dx = c.x - bx;
+      const dy = c.y - by;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < best.dist) best = { x: c.x, y: c.y, dist: d };
+    }
+    return best;
   }
 
-  update(dt, player, items, projectiles) {
-    if (!this.alive) {
-      this.respawnTimer -= dt;
-      if (this.respawnTimer <= 0) this.respawn();
-      return;
-    }
+  update(dt, player, items, projectiles, bots) {
+    if (!this.alive) return;
 
     if (this.hurtTimer > 0) this.hurtTimer -= dt;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
 
     const bx = this.x + this.width / 2;
     const by = this.y + this.height / 2;
-    const px = player.x + player.width / 2;
-    const py = player.y + player.height / 2;
-    const dist = Math.sqrt((px - bx) ** 2 + (py - by) ** 2);
+    const target = this.getNearestTarget(player, bots);
+    const tdx = target.x - bx;
+    const tdy = target.y - by;
+    const dist = Math.sqrt(tdx * tdx + tdy * tdy);
+    target.dist = dist;
 
-    this._decide(dt, player, items, projectiles, dist, bx, by, px, py);
+    this._decide(dt, player, items, projectiles, target, bx, by, bots);
     super.update(dt);
+    this._constrainToStorm();
   }
 
-  _decide(dt, player, items, projectiles, dist, bx, by, px, py) {
+  _constrainToStorm() {
+    const cx = this.x + this.width / 2;
+    const cy = this.y + this.height / 2;
+    const dx = cx - ARENA_CX;
+    const dy = cy - ARENA_CY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const maxDist = this.stormRadius - Math.max(this.width, this.height) / 2;
+    if (dist > maxDist && maxDist > 0) {
+      const ratio = maxDist / dist;
+      this.x = ARENA_CX + dx * ratio - this.width / 2;
+      this.y = ARENA_CY + dy * ratio - this.height / 2;
+    }
+  }
+
+  _decide(dt, player, items, projectiles, target, bx, by, bots) {
     if (this.hp / this.maxHp < this.retreatThreshold) {
       this.state = 'retreat';
-    } else if (dist < this.detectionRange) {
+    } else if (target.dist < this.detectionRange) {
       const hasRanged = this._hasRangedWeapon();
-      if (this._hasWeapon() && (dist < this.attackRange || hasRanged)) {
+      if (this._hasWeapon() && (target.dist < this.attackRange || hasRanged)) {
         this.state = 'attack';
       } else {
         this.state = 'chase';
@@ -101,22 +119,22 @@ class Bot extends Entity {
       }
     }
 
-    this._executeState(dt, player, items, projectiles, dist, bx, by, px, py);
+    this._executeState(dt, player, items, projectiles, target, bx, by, bots);
   }
 
-  _executeState(dt, player, items, projectiles, dist, bx, by, px, py) {
+  _executeState(dt, player, items, projectiles, target, bx, by, bots) {
     switch (this.state) {
       case 'wander':
         this._doWander(dt);
         break;
       case 'chase':
-        this._doChase(px, py);
+        this._doChase(target.x, target.y);
         break;
       case 'attack':
-        this._doAttack(player, projectiles, dist, px, py, bx, by);
+        this._doAttack(target, projectiles, bx, by, player, bots);
         break;
       case 'retreat':
-        this._doRetreat(px, py, bx, by);
+        this._doRetreat(target, bx, by);
         break;
       case 'pickup':
         this._doPickup(items, bx, by);
@@ -135,11 +153,11 @@ class Bot extends Entity {
     this._moveToward(this.wanderTarget.x, this.wanderTarget.y);
   }
 
-  _doChase(px, py) {
-    this._moveToward(px, py);
+  _doChase(tx, ty) {
+    this._moveToward(tx, ty);
   }
 
-  _doAttack(player, projectiles, dist, px, py, bx, by) {
+  _doAttack(target, projectiles, bx, by, player, bots) {
     if (this.attackCooldown > 0) return;
     const item = this.inventory[this.selectedSlot];
     if (!item) { this.state = 'chase'; return; }
@@ -152,21 +170,24 @@ class Bot extends Entity {
       return;
     }
 
+    const tx = target.x;
+    const ty = target.y;
+
     if (item.name === 'Sword' || item.name === 'Axe') {
-      if (dist > this.attackRange) { this.state = 'chase'; return; }
+      if (target.dist > this.attackRange) { this.state = 'chase'; return; }
       const dmg = item.name === 'Sword' ? 30 : 50;
       this.attackCooldown = item.name === 'Sword' ? 0.4 : 0.7;
-      player.hp = Math.max(0, player.hp - dmg);
+      this._applyMelee(tx, ty, dmg, player, bots);
     }
 
     if (item.name === 'Knife') {
-      if (dist > this.attackRange) {
-        this._shootProjectile(projectiles, px, py, bx, by, 'Knife', 400, 250, 50);
+      if (target.dist > this.attackRange) {
+        this._shootProjectile(projectiles, tx, ty, bx, by, 'Knife', 400, 250, 50);
         this.inventory[this.selectedSlot] = null;
         this.attackCooldown = 0.5;
       } else {
         this.attackCooldown = 0.3;
-        player.hp = Math.max(0, player.hp - 15);
+        this._applyMelee(tx, ty, 15, player, bots);
       }
     }
 
@@ -176,29 +197,50 @@ class Bot extends Entity {
       const speed = 300 + t * 300;
       const range = 200 + t * 300;
       const dmg = Math.round(10 + t * 50);
-      this._shootProjectile(projectiles, px, py, bx, by, 'Arrow', speed, range, dmg);
+      this._shootProjectile(projectiles, tx, ty, bx, by, 'Arrow', speed, range, dmg);
       this.attackCooldown = 1 + Math.random();
     }
 
     this._equipBest();
   }
 
-  _shootProjectile(projectiles, px, py, bx, by, icon, speed, maxRange, damage) {
-    const angle = Math.atan2(py - by, px - bx);
+  _applyMelee(tx, ty, dmg, player, bots) {
+    const px = player.x + player.width / 2;
+    const py = player.y + player.height / 2;
+    const pDist = Math.sqrt((px - tx) ** 2 + (py - ty) ** 2);
+    if (pDist < this.attackRange + 32) {
+      player.hp = Math.max(0, player.hp - dmg);
+      return;
+    }
+    for (const b of bots) {
+      if (b === this || !b.alive) continue;
+      const bx = b.x + b.width / 2;
+      const by = b.y + b.height / 2;
+      const bDist = Math.sqrt((bx - tx) ** 2 + (by - ty) ** 2);
+      if (bDist < this.attackRange + 32) {
+        b.takeDamage(dmg, this.index);
+        return;
+      }
+    }
+  }
+
+  _shootProjectile(projectiles, tx, ty, bx, by, icon, speed, maxRange, damage) {
+    const angle = Math.atan2(ty - by, tx - bx);
     projectiles.push({
       x: bx, y: by,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       dist: 0, maxRange,
-      damage, icon, color: icon === 'Arrow' ? '#8bc34a' : '#ef5350', owner: 'bot',
+      damage, icon, color: icon === 'Arrow' ? '#8bc34a' : '#ef5350',
+      owner: 'bot', ownerIndex: this.index,
     });
   }
 
-  _doRetreat(px, py, bx, by) {
+  _doRetreat(target, bx, by) {
     const dx = bx - ARENA_CX;
     const dy = by - ARENA_CY;
     const distToCenter = Math.sqrt(dx * dx + dy * dy);
-    const borderDist = ARENA_RADIUS - 60 - distToCenter;
+    const borderDist = this.stormRadius - 60 - distToCenter;
 
     let tx, ty;
     if (borderDist < 50) {
@@ -206,8 +248,8 @@ class Bot extends Entity {
       tx = bx + Math.cos(angle) * 100;
       ty = by + Math.sin(angle) * 100;
     } else {
-      tx = this.x - (px - this.x);
-      ty = this.y - (py - this.y);
+      tx = this.x - (target.x - this.x);
+      ty = this.y - (target.y - this.y);
     }
 
     this._moveToward(tx, ty);

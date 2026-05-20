@@ -62,6 +62,23 @@
       <button class="btn btn-secondary" id="btn-back-summary">Zur\u00fcck zum Men\u00fc</button>
     </div>
     <canvas id="gameCanvas" style="display:none"></canvas>
+    <div id="endgame-overlay">
+      <h2 id="endgame-title">VICTORY!</h2>
+      <div class="endgame-buttons">
+        <button class="btn btn-secondary" id="endgame-another">Another Round</button>
+        <hr class="btn-separator">
+        <button class="btn btn-secondary" id="endgame-home">Main Menu</button>
+        <hr class="btn-separator">
+        <button class="btn btn-secondary" id="endgame-cutscene">Read a Scene</button>
+      </div>
+    </div>
+    <div id="cutscene-overlay">
+      <h1>The Hunger Games</h1>
+      <div class="cutscene-content" id="cutscene-content">
+        <p id="cutscene-text">Scene will appear here...</p>
+      </div>
+      <button class="btn btn-secondary" id="btn-back-cutscene">Back</button>
+    </div>
   </div>
   <select id="lang-top">
     <option value="de">Deutsch</option>

@@ -195,3 +195,77 @@ h1 {
   color: #aaa;
   font-style: italic;
 }
+
+#endgame-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  z-index: 50;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+}
+
+#endgame-overlay.active {
+  display: flex;
+}
+
+#endgame-title {
+  font-size: 3rem;
+  color: #ffd700;
+  text-transform: uppercase;
+  letter-spacing: 6px;
+}
+
+.endgame-buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+#cutscene-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.9);
+  z-index: 60;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+}
+
+#cutscene-overlay.active {
+  display: flex;
+}
+
+.cutscene-content {
+  background: rgba(22,33,62,0.85);
+  padding: 2rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  text-align: left;
+  line-height: 1.7;
+  max-width: 700px;
+}
+
+.cutscene-content p {
+  margin-bottom: 1rem;
+  color: #ddd;
+  font-size: 1rem;
+}
+
+.cutscene-content em {
+  color: #aaa;
+  font-style: italic;
+}

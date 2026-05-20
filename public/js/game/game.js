@@ -11,6 +11,13 @@ const BORDER_COLOR = '#4a7c3f';
 const GRASS_COLOR = '#6a9a5a';
 const GRASS_HIGHLIGHT = '#7aaa6a';
 const INNER_RING_COLOR = '#4a7c3f';
+const BOT_COUNT = 8;
+const PEDESTAL_RADIUS = 200;
+const COUNTDOWN_DURATION = 15;
+const STORM_DURATION = 300;
+const STORM_END_RADIUS = 100;
+
+const BOT_COLORS = ['#e53935', '#43a047', '#1e88e5', '#fb8c00', '#8e24aa', '#00acc1', '#f4511e', '#3949ab'];
 
 function resizeCanvas() {
   canvas.width = window.innerWidth;
@@ -27,6 +34,20 @@ function randomOutsideArena() {
   const angle = Math.random() * Math.PI * 2;
   const r = ARENA_RADIUS + 60 + Math.random() * 2000;
   return { x: ARENA_CX + Math.cos(angle) * r, y: ARENA_CY + Math.sin(angle) * r };
+}
+
+function randomNearCenter() {
+  const angle = Math.random() * Math.PI * 2;
+  const r = Math.pow(Math.random(), 1.5) * (ARENA_RADIUS - 80);
+  return { x: ARENA_CX + Math.cos(angle) * r, y: ARENA_CY + Math.sin(angle) * r };
+}
+
+function randomPedestalPos(index, total) {
+  const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
+  return {
+    x: ARENA_CX + Math.cos(angle) * PEDESTAL_RADIUS - 16,
+    y: ARENA_CY + Math.sin(angle) * PEDESTAL_RADIUS - 24,
+  };
 }
 
 const ITEM_TYPES = [
@@ -127,17 +148,25 @@ function drawItemIcon(ctx, x, y, s, name, color) {
   ctx.restore();
 }
 
-function randomNearCenter() {
-  const angle = Math.random() * Math.PI * 2;
-  const r = Math.pow(Math.random(), 1.5) * (ARENA_RADIUS - 80);
-  return { x: ARENA_CX + Math.cos(angle) * r, y: ARENA_CY + Math.sin(angle) * r };
-}
-
 const gameScene = new (class extends Scene {
   enter() {
-    this.player = new Player(ARENA_CX - 16, ARENA_CY - 24);
-    this.camera = new Camera(canvas.width, canvas.height);
+    this.phase = 'countdown';
     this.time = 0;
+    this.countdownTimer = COUNTDOWN_DURATION;
+    this.stormRadius = ARENA_RADIUS;
+    this.camera = new Camera(canvas.width, canvas.height);
+
+    const pPos = randomPedestalPos(0, BOT_COUNT + 1);
+    this.player = new Player(pPos.x, pPos.y);
+    this.camera.x = ARENA_CX - canvas.width / 2;
+    this.camera.y = ARENA_CY - canvas.height / 2;
+
+    this.bots = [];
+    for (let i = 0; i < BOT_COUNT; i++) {
+      const pos = randomPedestalPos(i + 1, BOT_COUNT + 1);
+      const bot = new Bot(pos.x, pos.y, i);
+      this.bots.push(bot);
+    }
 
     this.grassTufts = [];
     this.bushes = [];
@@ -174,7 +203,6 @@ const gameScene = new (class extends Scene {
       this.darkPatches.push({ x: pos.x, y: pos.y, rx: 8 + Math.random() * 30, ry: 6 + Math.random() * 20, alpha: 0.08 + Math.random() * 0.12 });
     }
 
-    this.bot = new Bot(ARENA_CX + 80, ARENA_CY - 24);
     this.inventory = new Inventory(3);
     this.attackCooldown = 0;
     this.slashEffect = null;
@@ -184,9 +212,17 @@ const gameScene = new (class extends Scene {
     this._prevSelectedSlot = 0;
     this._prevRightClicked = false;
     this.playerAlive = true;
-    this.playerRespawnTimer = 0;
+    this._nearbyItem = null;
 
     this.items = [];
+    for (let i = 0; i < 60; i++) {
+      const pos = randomInArena();
+      this.items.push({
+        x: pos.x, y: pos.y,
+        ...ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)],
+        collected: false,
+      });
+    }
     for (let i = 0; i < 30; i++) {
       const pos = randomNearCenter();
       this.items.push({
@@ -202,6 +238,13 @@ const gameScene = new (class extends Scene {
       const radius = 20 + Math.random() * 30;
       this.rocks.push({ x: pos.x, y: pos.y, radius });
     }
+
+    this.killFeed = [];
+    this.killFeedTimer = 0;
+    this.supplyDrops = [];
+    this.supplyDropTimer = 25 + Math.random() * 20;
+    this.gameEnded = false;
+    this.victory = false;
 
     this._buildBackgroundCache();
   }
@@ -242,12 +285,52 @@ const gameScene = new (class extends Scene {
 
   update(dt) {
     this.time += dt;
-    this.player.update(dt, input);
-    this.bot.update(dt, this.player, this.items, this.projectiles);
-    this._constrainBot();
+
+    if (this.gameEnded) {
+      input.clearFrame();
+      return;
+    }
+
+    if (this.phase === 'countdown') {
+      this._updateCountdown(dt);
+    } else if (this.phase === 'playing') {
+      this._updatePlaying(dt);
+    }
+
+    if (this.killFeed.length > 0) {
+      this.killFeedTimer += dt;
+      if (this.killFeedTimer > 5) {
+        this.killFeed.shift();
+        this.killFeedTimer = 0;
+      }
+    }
+
+    input.clearFrame();
+  }
+
+  _updateCountdown(dt) {
+    this.countdownTimer -= dt;
+    this.camera.x = ARENA_CX - canvas.width / 2;
+    this.camera.y = ARENA_CY - canvas.height / 2;
+    if (this.countdownTimer <= 0) {
+      this.phase = 'playing';
+      this.countdownTimer = 0;
+    }
+  }
+
+  _updatePlaying(dt) {
+    const stormProgress = Math.min(this.time / STORM_DURATION, 1);
+    this.stormRadius = Math.max(ARENA_RADIUS + (STORM_END_RADIUS - ARENA_RADIUS) * stormProgress, STORM_END_RADIUS);
+
+    for (const bot of this.bots) {
+      bot.stormRadius = this.stormRadius;
+    }
 
     if (this.playerAlive) {
+      this.player.update(dt, input);
       this._constrainPlayer();
+      if (!this.playerAlive) return;
+      this._checkStormDamage(dt);
       this.camera.follow(this.player, canvas.width, canvas.height);
       this.inventory.update(input);
       this._checkPickup(input);
@@ -266,6 +349,7 @@ const gameScene = new (class extends Scene {
         }
       }
     }
+
     this._prevRightClicked = input.mouse.rightClicked;
     this._prevSelectedSlot = this.inventory.selected;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
@@ -273,6 +357,12 @@ const gameScene = new (class extends Scene {
       this.slashEffect.timer -= dt;
       if (this.slashEffect.timer <= 0) this.slashEffect = null;
     }
+
+    for (const bot of this.bots) {
+      if (!bot.alive) continue;
+      bot.update(dt, this.player, this.items, this.projectiles, this.bots);
+    }
+
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
       p.x += p.vx * dt;
@@ -288,21 +378,22 @@ const gameScene = new (class extends Scene {
           break;
         }
       }
-      if (hitRock) {
-        this.projectiles.splice(i, 1);
-        continue;
-      }
+      if (hitRock) { this.projectiles.splice(i, 1); continue; }
 
       if (p.owner === 'player') {
-        const bx = this.bot.x + this.bot.width / 2;
-        const by = this.bot.y + this.bot.height / 2;
-        const pdx = bx - p.x;
-        const pdy = by - p.y;
-        if (pdx * pdx + pdy * pdy < 20 * 20) {
-          this.bot.takeDamage(p.damage, this.items);
-          this.projectiles.splice(i, 1);
-          continue;
+        for (const bot of this.bots) {
+          if (!bot.alive) continue;
+          const bx = bot.x + bot.width / 2;
+          const by = bot.y + bot.height / 2;
+          const pdx = bx - p.x;
+          const pdy = by - p.y;
+          if (pdx * pdx + pdy * pdy < 20 * 20) {
+            bot.takeDamage(p.damage, 'player');
+            this.projectiles.splice(i, 1);
+            break;
+          }
         }
+        continue;
       } else if (p.owner === 'bot') {
         const px = this.player.x + this.player.width / 2;
         const py = this.player.y + this.player.height / 2;
@@ -313,30 +404,144 @@ const gameScene = new (class extends Scene {
           this.projectiles.splice(i, 1);
           continue;
         }
+        for (const bot of this.bots) {
+          if (!bot.alive || bot.index === p.ownerIndex) continue;
+          const bx = bot.x + bot.width / 2;
+          const by = bot.y + bot.height / 2;
+          const pdx = bx - p.x;
+          const pdy = by - p.y;
+          if (pdx * pdx + pdy * pdy < 20 * 20) {
+            bot.takeDamage(p.damage, p.ownerIndex);
+            this.projectiles.splice(i, 1);
+            break;
+          }
+        }
+        continue;
       }
 
       if (p.dist >= p.maxRange) {
         this.projectiles.splice(i, 1);
       }
     }
+
     if (this.player.hp <= 0 && this.playerAlive) {
       this.playerAlive = false;
-      this.playerRespawnTimer = 3;
-      this.inventory.slots = [null, null, null];
-    }
-    if (!this.playerAlive) {
-      this.playerRespawnTimer -= dt;
-      this.player.vx = 0;
-      this.player.vy = 0;
-      if (this.playerRespawnTimer <= 0) {
-        this.player.hp = this.player.maxHp;
-        this.player.x = ARENA_CX - this.player.width / 2;
-        this.player.y = ARENA_CY - this.player.height / 2;
-        this.playerAlive = true;
-        this.inventory.slots = [null, null, null];
+      this.playerDeathTime = this.time;
+      const aliveBots = this.bots.filter(b => b.alive).length;
+      if (aliveBots === 0) {
+        this._endGame(true);
+      } else {
+        this._addKillFeed('You were eliminated');
       }
     }
-    input.clearFrame();
+
+    if (!this.playerAlive && !this.gameEnded && this.time - this.playerDeathTime > 2) {
+      this._endGame(false);
+    }
+
+    for (const bot of this.bots) {
+      if (bot.hp <= 0 && bot.alive) {
+        bot.alive = false;
+        bot.vx = 0;
+        bot.vy = 0;
+        bot._dropItems(this.items);
+        let msg;
+        if (bot.lastDamagedBy === 'player') {
+          msg = `You eliminated Tributo ${bot.index + 1}`;
+        } else if (bot.lastDamagedBy === 'storm') {
+          msg = `Tributo ${bot.index + 1} was killed by the storm`;
+        } else if (typeof bot.lastDamagedBy === 'number' && this.bots[bot.lastDamagedBy]) {
+          msg = `Tributo ${this.bots[bot.lastDamagedBy].index + 1} eliminated Tributo ${bot.index + 1}`;
+        } else {
+          msg = `Tributo ${bot.index + 1} was eliminated`;
+        }
+        this._addKillFeed(msg);
+      }
+    }
+
+    const aliveBots = this.bots.filter(b => b.alive).length;
+    if (this.playerAlive && aliveBots === 0 && !this.gameEnded) {
+      this._endGame(true);
+    }
+
+    this._updateSupplyDrops(dt);
+  }
+
+  _addKillFeed(msg) {
+    this.killFeed.push(msg);
+    if (this.killFeed.length > 5) this.killFeed.shift();
+    this.killFeedTimer = 0;
+  }
+
+  _endGame(victory) {
+    this.gameEnded = true;
+    this.victory = victory;
+    this.player.vx = 0;
+    this.player.vy = 0;
+    engine.stop();
+    document.getElementById('endgame-overlay').classList.add('active');
+    const title = document.getElementById('endgame-title');
+    title.textContent = victory ? 'VICTORY!' : 'GAME OVER';
+  }
+
+  _checkStormDamage(dt) {
+    const px = this.player.x + this.player.width / 2;
+    const py = this.player.y + this.player.height / 2;
+    const dx = px - ARENA_CX;
+    const dy = py - ARENA_CY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist > this.stormRadius && this.playerAlive) {
+      this.player.hp = Math.max(0, this.player.hp - 10 * dt);
+    }
+    for (const bot of this.bots) {
+      if (!bot.alive) continue;
+      const bx = bot.x + bot.width / 2;
+      const by = bot.y + bot.height / 2;
+      const bdx = bx - ARENA_CX;
+      const bdy = by - ARENA_CY;
+      const bDist = Math.sqrt(bdx * bdx + bdy * bdy);
+      if (bDist > this.stormRadius) {
+        bot.takeDamage(10 * dt, 'storm');
+      }
+    }
+  }
+
+  _updateSupplyDrops(dt) {
+    this.supplyDropTimer -= dt;
+    if (this.supplyDropTimer <= 0) {
+      this.supplyDropTimer = 25 + Math.random() * 20;
+      const pos = randomInArena();
+      const type = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+      this.supplyDrops.push({
+        x: pos.x, y: pos.y,
+        vy: -120,
+        name: type.name,
+        color: type.color,
+        collected: false,
+        landing: false,
+      });
+    }
+
+    for (let i = this.supplyDrops.length - 1; i >= 0; i--) {
+      const drop = this.supplyDrops[i];
+      if (drop.collected) {
+        this.supplyDrops.splice(i, 1);
+        continue;
+      }
+      if (drop.vy < 0) {
+        drop.vy += 200 * dt;
+        drop.y += drop.vy * dt;
+        if (drop.vy >= 0) {
+          drop.vy = 0;
+          drop.landing = true;
+          this.items.push({
+            x: drop.x, y: drop.y,
+            name: drop.name, color: drop.color,
+            collected: false,
+          });
+        }
+      }
+    }
   }
 
   _checkPickup(input) {
@@ -382,6 +587,7 @@ const gameScene = new (class extends Scene {
   _checkAttack(input) {
     const item = this.inventory.slots[this.inventory.selected];
     if (!item) return;
+    if (!this.playerAlive) return;
 
     if (item.name === 'Knife' && input.mouse.rightJustClicked) {
       this.inventory.slots[this.inventory.selected] = null;
@@ -390,11 +596,10 @@ const gameScene = new (class extends Scene {
       const mx = input.mouse.x + this.camera.x;
       const my = input.mouse.y + this.camera.y;
       const angle = Math.atan2(my - py, mx - px);
-      const speed = 400;
       this.projectiles.push({
         x: px, y: py,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
+        vx: Math.cos(angle) * 400,
+        vy: Math.sin(angle) * 400,
         dist: 0, maxRange: 250,
         damage: 50, icon: 'Knife', color: '#ef5350', owner: 'player',
       });
@@ -434,21 +639,25 @@ const gameScene = new (class extends Scene {
     else if (item.name === 'Knife') { damage = 15; this.attackCooldown = 0.3; }
     else { return; }
 
-    const bx = this.bot.x + this.bot.width / 2;
-    const by = this.bot.y + this.bot.height / 2;
-    const bdx = bx - px;
-    const bdy = by - py;
-    const bdist = Math.sqrt(bdx * bdx + bdy * bdy);
-    if (bdist > range) return;
+    for (const bot of this.bots) {
+      if (!bot.alive) continue;
+      const bx = bot.x + bot.width / 2;
+      const by = bot.y + bot.height / 2;
+      const bdx = bx - px;
+      const bdy = by - py;
+      const bdist = Math.sqrt(bdx * bdx + bdy * bdy);
+      if (bdist > range) continue;
 
-    const bang = Math.atan2(bdy, bdx);
-    let diff = bang - angle;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    if (Math.abs(diff) > cone) return;
+      const bang = Math.atan2(bdy, bdx);
+      let diff = bang - angle;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      if (Math.abs(diff) > cone) continue;
 
-    this.bot.takeDamage(damage, this.items);
-    this.slashEffect = { x: bx, y: by, timer: 0.2, angle };
+      bot.takeDamage(damage, 'player');
+      this.slashEffect = { x: bx, y: by, timer: 0.2, angle };
+      return;
+    }
   }
 
   _checkSelfDamage(input) {
@@ -480,30 +689,16 @@ const gameScene = new (class extends Scene {
     });
   }
 
-  _constrainBot() {
-    const b = this.bot;
-    const cx = b.x + b.width / 2;
-    const cy = b.y + b.height / 2;
-    const dx = cx - ARENA_CX;
-    const dy = cy - ARENA_CY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
-    const maxDist = ARENA_RADIUS - Math.max(b.width, b.height) / 2;
-    if (dist > maxDist) {
-      const ratio = maxDist / dist;
-      b.x = ARENA_CX + dx * ratio - b.width / 2;
-      b.y = ARENA_CY + dy * ratio - b.height / 2;
-    }
-  }
-
   _constrainPlayer() {
     const p = this.player;
+    if (!this.playerAlive) return;
     const cx = p.x + p.width / 2;
     const cy = p.y + p.height / 2;
     const dx = cx - ARENA_CX;
     const dy = cy - ARENA_CY;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    const maxDist = ARENA_RADIUS - Math.max(p.width, p.height) / 2;
-    if (dist > maxDist) {
+    const maxDist = this.stormRadius - Math.max(p.width, p.height) / 2;
+    if (dist > maxDist && maxDist > 0) {
       const ratio = maxDist / dist;
       p.x = ARENA_CX + dx * ratio - p.width / 2;
       p.y = ARENA_CY + dy * ratio - p.height / 2;
@@ -536,10 +731,17 @@ const gameScene = new (class extends Scene {
       ctx.fill();
     }
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(ARENA_CX, ARENA_CY, ARENA_RADIUS, 0, Math.PI * 2);
-    ctx.clip();
+    if (this.phase !== 'countdown') {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ARENA_CX, ARENA_CY, this.stormRadius, 0, Math.PI * 2);
+      ctx.clip();
+    } else {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ARENA_CX, ARENA_CY, ARENA_RADIUS, 0, Math.PI * 2);
+      ctx.clip();
+    }
 
     for (const g of this.grassTufts) {
       if (!this._isVisible(g.x, g.y)) continue;
@@ -596,6 +798,8 @@ const gameScene = new (class extends Scene {
       ctx.stroke();
     }
 
+    this._renderCornucopia(ctx);
+
     ctx.font = '14px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -609,6 +813,32 @@ const gameScene = new (class extends Scene {
       ctx.lineWidth = 1.5;
       ctx.stroke();
       drawItemIcon(ctx, item.x, item.y, 12, item.name, item.color);
+    }
+
+    for (const drop of this.supplyDrops) {
+      if (drop.collected) continue;
+      if (!this._isVisible(drop.x - 10, drop.y - 30, 20)) continue;
+      ctx.fillStyle = 'rgba(255,255,255,0.9)';
+      ctx.beginPath();
+      ctx.moveTo(drop.x, drop.y - 30);
+      ctx.lineTo(drop.x - 8, drop.y - 16);
+      ctx.lineTo(drop.x + 8, drop.y - 16);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(drop.x, drop.y - 30);
+      ctx.lineTo(drop.x, drop.y - 16);
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.beginPath();
+      ctx.arc(drop.x, drop.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      drawItemIcon(ctx, drop.x, drop.y, 12, drop.name, drop.color);
     }
 
     if (this.slashEffect) {
@@ -625,17 +855,25 @@ const gameScene = new (class extends Scene {
       drawItemIcon(ctx, p.x, p.y, 14, p.icon, p.color);
     }
 
-    this.bot.render(ctx);
+    if (this.phase === 'countdown') {
+      this._renderPedestals(ctx);
+    }
 
-    this.player.render(ctx);
+    for (const bot of this.bots) {
+      bot.render(ctx);
+    }
+
+    if (this.playerAlive) {
+      this.player.render(ctx);
+    }
 
     const heldItem = this.inventory.slots[this.inventory.selected];
-    if (heldItem) {
+    if (heldItem && this.playerAlive) {
       const hand = this.player.getRightHandPos();
       drawItemIcon(ctx, hand.x, hand.y, 24, heldItem.name, heldItem.color);
     }
 
-    if (this._nearbyItem) {
+    if (this._nearbyItem && this.playerAlive) {
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
       ctx.fillRect(this._nearbyItem.x - 14, this._nearbyItem.y - 34, 28, 20);
       ctx.strokeStyle = '#fff';
@@ -651,13 +889,32 @@ const gameScene = new (class extends Scene {
     ctx.restore();
     ctx.restore();
 
+    if (this.phase !== 'countdown') {
+      this._renderStormOverlay(ctx);
+    }
+
     this.inventory.render(ctx, canvas.width, canvas.height);
 
     ctx.fillStyle = '#fff';
     ctx.font = '14px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText(`HP: ${this.player.hp}/${this.player.maxHp}`, 12, 12);
+    const aliveCount = this.bots.filter(b => b.alive).length + (this.playerAlive ? 1 : 0);
+    ctx.fillText(`HP: ${Math.ceil(this.player.hp)}/${this.player.maxHp} | Alive: ${aliveCount}`, 12, 12);
+
+    if (this.phase === 'countdown') {
+      const secs = Math.ceil(this.countdownTimer);
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(canvas.width / 2 - 50, canvas.height / 2 - 50, 100, 100);
+      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(canvas.width / 2 - 50, canvas.height / 2 - 50, 100, 100);
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 48px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(secs > 0 ? secs : 'GO!', canvas.width / 2, canvas.height / 2);
+    }
 
     if (this.bowCharging) {
       const charge = Math.min((this.time - this.bowChargeStart) / 2, 1);
@@ -673,6 +930,89 @@ const gameScene = new (class extends Scene {
       ctx.lineWidth = 1;
       ctx.strokeRect(bx, by, barW, barH);
     }
+
+    if (this.killFeed.length > 0) {
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      for (let i = 0; i < this.killFeed.length; i++) {
+        const alpha = 1 - i * 0.15;
+        ctx.fillStyle = `rgba(255,200,100,${Math.max(0, alpha)})`;
+        ctx.font = 'bold 13px sans-serif';
+        ctx.fillText(this.killFeed[i], canvas.width - 12, 12 + i * 20);
+      }
+    }
+  }
+
+  _renderCornucopia(ctx) {
+    ctx.save();
+    const x = ARENA_CX;
+    const y = ARENA_CY;
+    const w = 80;
+    const h = 50;
+
+    ctx.fillStyle = '#d4a437';
+    ctx.beginPath();
+    ctx.moveTo(x - w / 2, y);
+    ctx.lineTo(x, y - h);
+    ctx.lineTo(x + w / 2, y);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = '#b8860b';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = '#c49a2a';
+    ctx.fillRect(x - w / 2, y, w, 12);
+    ctx.strokeStyle = '#b8860b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x - w / 2, y, w, 12);
+
+    ctx.fillStyle = '#b8860b';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('C', x, y - h / 2);
+
+    ctx.restore();
+  }
+
+  _renderPedestals(ctx) {
+    const count = BOT_COUNT + 1;
+    for (let i = 0; i < count; i++) {
+      const pos = randomPedestalPos(i, count);
+      ctx.fillStyle = 'rgba(100,100,100,0.6)';
+      ctx.fillRect(pos.x - 16, pos.y + 48, 64, 12);
+      ctx.fillStyle = 'rgba(80,80,80,0.8)';
+      ctx.fillRect(pos.x - 16, pos.y + 48, 64, 3);
+    }
+
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.beginPath();
+    ctx.arc(ARENA_CX, ARENA_CY, 250, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  _renderStormOverlay(ctx) {
+    const ox = this.camera.x;
+    const oy = this.camera.y;
+    const cw = canvas.width;
+    const ch = canvas.height;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(ox, oy, cw, ch);
+    ctx.arc(ARENA_CX, ARENA_CY, this.stormRadius, 0, Math.PI * 2, true);
+    ctx.fillStyle = 'rgba(200,50,0,0.25)';
+    ctx.fill();
+
+    const borderIntensity = Math.min(1, (ARENA_RADIUS - this.stormRadius) / (ARENA_RADIUS - STORM_END_RADIUS));
+    ctx.strokeStyle = `rgba(255,100,0,${0.3 + borderIntensity * 0.7})`;
+    ctx.lineWidth = 6 + borderIntensity * 8;
+    ctx.beginPath();
+    ctx.arc(ARENA_CX, ARENA_CY, this.stormRadius, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
   }
 })();
 
@@ -684,6 +1024,8 @@ function startGame() {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
+  document.getElementById('endgame-overlay').classList.remove('active');
+  document.getElementById('cutscene-overlay').classList.remove('active');
   canvas.style.display = 'block';
   resizeCanvas();
   engine.start('game');
