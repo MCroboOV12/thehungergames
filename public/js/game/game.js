@@ -988,8 +988,42 @@ const gameScene = new (class extends Scene {
         if (!rp.alive) continue;
         const c = colors[colorIdx % colors.length];
         colorIdx++;
+
+        if (rp._armTime === undefined) rp._armTime = 0;
+        if (rp._prevX === undefined) { rp._prevX = rp.x; rp._prevY = rp.y; }
+
+        const moving = Math.abs(rp.x - rp._prevX) > 1 || Math.abs(rp.y - rp._prevY) > 1;
+        rp._prevX = rp.x;
+        rp._prevY = rp.y;
+        rp._armTime += (moving ? 0.1 : 0.001);
+
         const cx = rp.x + 16;
         const cy = rp.y + 24;
+
+        const armSwing = moving ? 0.35 : 0;
+        if (rp._currentSwing === undefined) rp._currentSwing = 0;
+        rp._currentSwing += (armSwing - rp._currentSwing) * 0.3;
+
+        const armLen = 26;
+        const armAngle = 0.5 + Math.sin(rp._armTime * 6) * rp._currentSwing;
+
+        const lArmEndX = cx - 16 - Math.cos(armAngle) * armLen;
+        const lArmEndY = cy - 6 + Math.sin(armAngle) * armLen;
+        const rArmEndX = cx + 16 + Math.cos(armAngle) * armLen;
+        const rArmEndY = cy - 6 + Math.sin(armAngle) * armLen;
+
+        ctx.strokeStyle = '#c42e47';
+        ctx.lineWidth = 6;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(cx - 16, cy - 6);
+        ctx.lineTo(lArmEndX, lArmEndY);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(cx + 16, cy - 6);
+        ctx.lineTo(rArmEndX, rArmEndY);
+        ctx.stroke();
 
         ctx.fillStyle = c;
         ctx.fillRect(rp.x, rp.y, 32, 48);
@@ -1009,15 +1043,23 @@ const gameScene = new (class extends Scene {
         ctx.arc(cx + 11, rp.y + 15, 2.5, 0, Math.PI * 2);
         ctx.fill();
 
+        ctx.fillStyle = '#b02a3e';
+        ctx.beginPath();
+        ctx.arc(lArmEndX, lArmEndY, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(rArmEndX, rArmEndY, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (rp.selectedItem) {
+          drawItemIcon(ctx, rArmEndX, rArmEndY - 12, 22, rp.selectedItem, '#ccc');
+        }
+
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillText(rp.name || `Player`, cx, rp.y - 4);
-
-        if (rp.selectedItem) {
-          drawItemIcon(ctx, cx + 20, cy - 10, 18, rp.selectedItem, '#ccc');
-        }
+        ctx.fillText(rp.name || 'Player', cx, rp.y - 4);
       }
     }
 
