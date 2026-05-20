@@ -20,6 +20,12 @@ const wss = new WebSocket.Server({ server });
 const games = {};
 let nextPlayerId = 1;
 
+setInterval(() => {
+  wss.clients.forEach(ws => {
+    if (ws.readyState === WebSocket.OPEN) ws.ping();
+  });
+}, 10000);
+
 function broadcast(game, msg, excludeWs = null) {
   const data = JSON.stringify(msg);
   for (const p of game.players) {

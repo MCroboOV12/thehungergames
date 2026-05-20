@@ -160,9 +160,13 @@ const gameScene = new (class extends Scene {
     client.on('take_damage', (msg) => {
       this.player.hp = Math.max(0, this.player.hp - msg.amount);
       this.hurtTimer = 0.15;
+      this._sendPlayerUpdate();
     });
     client.on('player_left', (msg) => {
       delete this.remotePlayers[msg.playerId];
+    });
+    client.on('close', () => {
+      this._disconnected = true;
     });
   }
 
@@ -175,6 +179,7 @@ const gameScene = new (class extends Scene {
     this.remotePlayers = this.remotePlayers || {};
     this._lastPlayerUpdate = 0;
     this.hurtTimer = 0;
+    this._disconnected = false;
     this.multiplayerMode = !!this.multiplayerMode;
 
     const pPos = randomPedestalPos(0, BOT_COUNT + 1);
@@ -327,17 +332,7 @@ const gameScene = new (class extends Scene {
       this._lastPlayerUpdate += dt;
       if (this._lastPlayerUpdate > 0.05) {
         this._lastPlayerUpdate = 0;
-        const hand = this.playerAlive ? this.player.getRightHandPos() : null;
-        this.multiplayerClient.send({
-          type: 'player_update',
-          x: this.player.x,
-          y: this.player.y,
-          hp: this.player.hp,
-          maxHp: this.player.maxHp,
-          alive: this.playerAlive,
-          selectedItem: this.playerAlive && this.inventory.slots[this.inventory.selected]?.name || null,
-          attackAnim: this._prevAttackAnim || false,
-        });
+        this._sendPlayerUpdate();
       }
       this._prevAttackAnim = false;
     }
@@ -353,6 +348,21 @@ const gameScene = new (class extends Scene {
     if (this.hurtTimer > 0) this.hurtTimer -= dt;
 
     input.clearFrame();
+  }
+
+  _sendPlayerUpdate() {
+    if (!this.multiplayerClient) return;
+    const item = this.inventory.slots[this.inventory.selected];
+    this.multiplayerClient.send({
+      type: 'player_update',
+      x: this.player.x,
+      y: this.player.y,
+      hp: this.player.hp,
+      maxHp: this.player.maxHp,
+      alive: this.playerAlive,
+      selectedItem: item ? item.name : null,
+      attackAnim: this._prevAttackAnim || false,
+    });
   }
 
   _updateCountdown(dt) {
@@ -716,6 +726,7 @@ const gameScene = new (class extends Scene {
       if (this.player.hp < this.player.maxHp) {
         this.player.hp = this.player.maxHp;
         this.inventory.slots[this.inventory.selected] = null;
+        this._sendPlayerUpdate();
       }
       return;
     }
@@ -1156,6 +1167,16 @@ const gameScene = new (class extends Scene {
     if (this.hurtTimer > 0) {
       ctx.fillStyle = `rgba(255,0,0,${this.hurtTimer * 2})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    if (this._disconnected) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Connection lost', canvas.width / 2, canvas.height / 2);
     }
   }
 
