@@ -183,6 +183,8 @@ const gameScene = new (class extends Scene {
     this.bowChargeStart = 0;
     this._prevSelectedSlot = 0;
     this._prevRightClicked = false;
+    this.playerAlive = true;
+    this.playerRespawnTimer = 0;
 
     this.items = [];
     for (let i = 0; i < 30; i++) {
@@ -242,23 +244,26 @@ const gameScene = new (class extends Scene {
     this.time += dt;
     this.player.update(dt, input);
     this.bot.update(dt, this.player, this.items, this.projectiles);
-    this._constrainPlayer();
     this._constrainBot();
-    this.camera.follow(this.player, canvas.width, canvas.height);
-    this.inventory.update(input);
-    this._checkPickup(input);
-    this._checkDrop(input);
-    this._checkAttack(input);
-    this._checkSelfDamage(input);
 
-    if (this.bowCharging) {
-      this._aimX = input.mouse.x + this.camera.x;
-      this._aimY = input.mouse.y + this.camera.y;
-      const item = this.inventory.slots[this.inventory.selected];
-      if (!item || item.name !== 'Bow') {
-        this.bowCharging = false;
-      } else if (this._prevRightClicked && !input.mouse.rightClicked) {
-        this._fireArrow();
+    if (this.playerAlive) {
+      this._constrainPlayer();
+      this.camera.follow(this.player, canvas.width, canvas.height);
+      this.inventory.update(input);
+      this._checkPickup(input);
+      this._checkDrop(input);
+      this._checkAttack(input);
+      this._checkSelfDamage(input);
+
+      if (this.bowCharging) {
+        this._aimX = input.mouse.x + this.camera.x;
+        this._aimY = input.mouse.y + this.camera.y;
+        const item = this.inventory.slots[this.inventory.selected];
+        if (!item || item.name !== 'Bow') {
+          this.bowCharging = false;
+        } else if (this._prevRightClicked && !input.mouse.rightClicked) {
+          this._fireArrow();
+        }
       }
     }
     this._prevRightClicked = input.mouse.rightClicked;
@@ -312,6 +317,23 @@ const gameScene = new (class extends Scene {
 
       if (p.dist >= p.maxRange) {
         this.projectiles.splice(i, 1);
+      }
+    }
+    if (this.player.hp <= 0 && this.playerAlive) {
+      this.playerAlive = false;
+      this.playerRespawnTimer = 3;
+      this.inventory.slots = [null, null, null];
+    }
+    if (!this.playerAlive) {
+      this.playerRespawnTimer -= dt;
+      this.player.vx = 0;
+      this.player.vy = 0;
+      if (this.playerRespawnTimer <= 0) {
+        this.player.hp = this.player.maxHp;
+        this.player.x = ARENA_CX - this.player.width / 2;
+        this.player.y = ARENA_CY - this.player.height / 2;
+        this.playerAlive = true;
+        this.inventory.slots = [null, null, null];
       }
     }
     input.clearFrame();
