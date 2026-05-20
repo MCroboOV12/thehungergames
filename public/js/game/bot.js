@@ -103,11 +103,21 @@ class Bot extends Entity {
     if (this.hp / this.maxHp < this.retreatThreshold) {
       this.state = 'retreat';
     } else if (target.dist < this.detectionRange) {
-      const hasRanged = this._hasRangedWeapon();
-      if (this._hasWeapon() && (target.dist < this.attackRange || hasRanged)) {
-        this.state = 'attack';
+      if (this._hasWeapon()) {
+        const hasRanged = this._hasRangedWeapon();
+        if (target.dist < this.attackRange || hasRanged) {
+          this.state = 'attack';
+        } else {
+          this.state = 'chase';
+        }
       } else {
-        this.state = 'chase';
+        const nearbyItem = this._findNearestItem(items, bx, by);
+        if (nearbyItem && this._hasEmptySlot()) {
+          this.state = 'pickup';
+          this.pickupTarget = nearbyItem;
+        } else {
+          this.state = 'chase';
+        }
       }
     } else {
       const nearbyItem = this._findNearestItem(items, bx, by);
