@@ -1,0 +1,197 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65)), url('/assets/the-hunger-games-characters-jxv7fcflh6ii0k0z-3404387440.jpg') center / cover no-repeat;
+  color: #eee;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+#app {
+  text-align: center;
+}
+
+#welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  min-height: 100vh;
+  width: 100%;
+  padding-bottom: 1.5rem;
+}
+
+.welcome-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  flex: 1;
+  justify-content: center;
+}
+
+.menu-buttons {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+}
+
+h1 {
+  font-size: 2.5rem;
+  color: #e94560;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #ccc;
+  font-style: italic;
+}
+
+.language-menu {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.language-menu label {
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+#lang-select {
+  padding: 0.6rem 1rem;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #e94560;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+#lang-select:focus {
+  outline: none;
+  color: #ff6b81;
+}
+
+#lang-top {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  border: none;
+  background: transparent;
+  color: #e94560;
+  font-size: 1rem;
+  cursor: pointer;
+  display: none;
+}
+
+#lang-top:focus {
+  outline: none;
+  color: #ff6b81;
+}
+
+#lang-top.visible {
+  display: block;
+}
+
+.btn-separator {
+  width: 1px;
+  border: none;
+  height: 3.5rem;
+  background: linear-gradient(to bottom, #000, #e94560, #000);
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.btn {
+  padding: 1.5rem 3.5rem;
+  border: none;
+  border-radius: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: #e94560;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #ff6b81;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #e94560;
+  border: none;
+}
+
+.btn-secondary:hover {
+  color: #ff6b81;
+}
+
+#gameCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #16213e;
+  display: none;
+}
+
+#favspot-screen,
+#summary-screen {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  max-width: 700px;
+  min-height: 100vh;
+  justify-content: center;
+}
+
+#favspot-screen.active,
+#summary-screen.active {
+  display: flex;
+}
+
+.favspot-content {
+  background: rgba(22, 33, 62, 0.85);
+  padding: 2rem;
+  max-height: 60vh;
+  overflow-y: auto;
+  text-align: left;
+  line-height: 1.7;
+}
+
+.favspot-content p {
+  margin-bottom: 1rem;
+  color: #ddd;
+  font-size: 1rem;
+}
+
+.favspot-content em {
+  color: #aaa;
+  font-style: italic;
+}

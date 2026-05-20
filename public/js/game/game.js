@@ -1,0 +1,650 @@
+const canvas = document.getElementById('gameCanvas');
+const engine = new GameEngine(canvas);
+const input = new Input();
+
+const ARENA_CX = 1000;
+const ARENA_CY = 1000;
+const ARENA_RADIUS = 2000;
+const CULL_MARGIN = 100;
+const GROUND_COLOR = '#5a8f4a';
+const BORDER_COLOR = '#4a7c3f';
+const GRASS_COLOR = '#6a9a5a';
+const GRASS_HIGHLIGHT = '#7aaa6a';
+const INNER_RING_COLOR = '#4a7c3f';
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+function randomInArena() {
+  const angle = Math.random() * Math.PI * 2;
+  const r = Math.sqrt(Math.random()) * (ARENA_RADIUS - 40);
+  return { x: ARENA_CX + Math.cos(angle) * r, y: ARENA_CY + Math.sin(angle) * r };
+}
+
+function randomOutsideArena() {
+  const angle = Math.random() * Math.PI * 2;
+  const r = ARENA_RADIUS + 60 + Math.random() * 2000;
+  return { x: ARENA_CX + Math.cos(angle) * r, y: ARENA_CY + Math.sin(angle) * r };
+}
+
+const ITEM_TYPES = [
+  { name: 'Sword', color: '#ccc' },
+  { name: 'Axe', color: '#a1887f' },
+  { name: 'Bow', color: '#8bc34a' },
+  { name: 'Heal', color: '#4fc3f7' },
+  { name: 'Knife', color: '#ef5350' },
+];
+
+function drawItemIcon(ctx, x, y, s, name, color) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = color;
+  ctx.strokeStyle = color;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  switch (name) {
+    case 'Sword':
+      ctx.lineWidth = s * 0.2;
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.7);
+      ctx.lineTo(0, s * 0.1);
+      ctx.stroke();
+      ctx.lineWidth = s * 0.1;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.4, s * 0.1);
+      ctx.lineTo(s * 0.4, s * 0.1);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, s * 0.1);
+      ctx.lineTo(0, s * 0.6);
+      ctx.stroke();
+      break;
+    case 'Axe':
+      ctx.lineWidth = s * 0.18;
+      ctx.beginPath();
+      ctx.moveTo(0, s * 0.3);
+      ctx.lineTo(0, -s * 0.3);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.6, -s * 0.1);
+      ctx.lineTo(0, -s * 0.6);
+      ctx.lineTo(s * 0.6, -s * 0.1);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    case 'Bow':
+      ctx.lineWidth = s * 0.12;
+      ctx.beginPath();
+      ctx.arc(0, -s * 0.1, s * 0.5, -Math.PI * 0.55, Math.PI * 0.55);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.55);
+      ctx.lineTo(0, s * 0.55);
+      ctx.stroke();
+      break;
+    case 'Heal':
+      ctx.lineWidth = s * 0.2;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.4, 0);
+      ctx.lineTo(s * 0.4, 0);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.4);
+      ctx.lineTo(0, s * 0.4);
+      ctx.stroke();
+      break;
+    case 'Knife':
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.6);
+      ctx.lineTo(-s * 0.4, s * 0.4);
+      ctx.lineTo(s * 0.4, s * 0.4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = s * 0.1;
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.2, s * 0.4);
+      ctx.lineTo(s * 0.2, s * 0.4);
+      ctx.stroke();
+      break;
+    case 'Arrow':
+      ctx.lineWidth = s * 0.1;
+      ctx.beginPath();
+      ctx.moveTo(0, -s * 0.5);
+      ctx.lineTo(0, s * 0.5);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-s * 0.3, -s * 0.3);
+      ctx.lineTo(0, -s * 0.5);
+      ctx.lineTo(s * 0.3, -s * 0.3);
+      ctx.closePath();
+      ctx.fill();
+      break;
+  }
+
+  ctx.restore();
+}
+
+function randomNearCenter() {
+  const angle = Math.random() * Math.PI * 2;
+  const r = Math.pow(Math.random(), 1.5) * (ARENA_RADIUS - 80);
+  return { x: ARENA_CX + Math.cos(angle) * r, y: ARENA_CY + Math.sin(angle) * r };
+}
+
+const gameScene = new (class extends Scene {
+  enter() {
+    this.player = new Player(ARENA_CX - 16, ARENA_CY - 24);
+    this.camera = new Camera(canvas.width, canvas.height);
+    this.time = 0;
+
+    this.grassTufts = [];
+    this.bushes = [];
+
+    for (let i = 0; i < 2500; i++) {
+      const pos = randomInArena();
+      const bladeCount = 3 + Math.floor(Math.random() * 3);
+      const blades = [];
+      for (let j = 0; j < bladeCount; j++) {
+        blades.push({
+          ox: (Math.random() - 0.5) * 12,
+          height: 10 + Math.random() * 12,
+          thickness: 1.5 + Math.random() * 1.5,
+          phase: Math.random() * Math.PI * 2,
+        });
+      }
+      this.grassTufts.push({ x: pos.x, y: pos.y, blades, phase: Math.random() * Math.PI * 2 });
+    }
+
+    for (let i = 0; i < 200; i++) {
+      const pos = randomInArena();
+      this.bushes.push(pos);
+    }
+
+    this.stars = [];
+    for (let i = 0; i < 600; i++) {
+      const pos = randomOutsideArena();
+      this.stars.push({ x: pos.x, y: pos.y, size: 0.5 + Math.random() * 2, phase: Math.random() * Math.PI * 2 });
+    }
+
+    this.darkPatches = [];
+    for (let i = 0; i < 80; i++) {
+      const pos = randomOutsideArena();
+      this.darkPatches.push({ x: pos.x, y: pos.y, rx: 8 + Math.random() * 30, ry: 6 + Math.random() * 20, alpha: 0.08 + Math.random() * 0.12 });
+    }
+
+    this.bot = new Bot(ARENA_CX + 80, ARENA_CY - 24);
+    this.inventory = new Inventory(3);
+    this.attackCooldown = 0;
+    this.slashEffect = null;
+    this.projectiles = [];
+    this.bowCharging = false;
+    this.bowChargeStart = 0;
+    this._prevSelectedSlot = 0;
+    this._prevRightClicked = false;
+
+    this.items = [];
+    for (let i = 0; i < 30; i++) {
+      const pos = randomNearCenter();
+      this.items.push({
+        x: pos.x, y: pos.y,
+        ...ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)],
+        collected: false,
+      });
+    }
+
+    this.rocks = [];
+    for (let i = 0; i < 20; i++) {
+      const pos = randomInArena();
+      const radius = 20 + Math.random() * 30;
+      this.rocks.push({ x: pos.x, y: pos.y, radius });
+    }
+
+    this._buildBackgroundCache();
+  }
+
+  _buildBackgroundCache() {
+    const size = ARENA_RADIUS * 2 + 40;
+    this.bgCanvas = document.createElement('canvas');
+    this.bgCanvas.width = size;
+    this.bgCanvas.height = size;
+    const bgCtx = this.bgCanvas.getContext('2d');
+    const ox = ARENA_CX - ARENA_RADIUS - 20;
+    const oy = ARENA_CY - ARENA_RADIUS - 20;
+
+    bgCtx.beginPath();
+    bgCtx.arc(ARENA_CX - ox, ARENA_CY - oy, ARENA_RADIUS, 0, Math.PI * 2);
+    bgCtx.fillStyle = GROUND_COLOR;
+    bgCtx.fill();
+
+    bgCtx.strokeStyle = BORDER_COLOR;
+    bgCtx.lineWidth = 8;
+    bgCtx.stroke();
+
+    bgCtx.beginPath();
+    bgCtx.arc(ARENA_CX - ox, ARENA_CY - oy, ARENA_RADIUS - 20, 0, Math.PI * 2);
+    bgCtx.strokeStyle = INNER_RING_COLOR;
+    bgCtx.lineWidth = 2;
+    bgCtx.stroke();
+
+    this.bgOffsetX = ox;
+    this.bgOffsetY = oy;
+  }
+
+  _isVisible(x, y, margin) {
+    const m = margin || CULL_MARGIN;
+    return x + m > this.camera.x && x - m < this.camera.x + canvas.width &&
+           y + m > this.camera.y && y - m < this.camera.y + canvas.height;
+  }
+
+  update(dt) {
+    this.time += dt;
+    this.player.update(dt, input);
+    this.bot.update(dt);
+    this._constrainPlayer();
+    this.camera.follow(this.player, canvas.width, canvas.height);
+    this.inventory.update(input);
+    this._checkPickup(input);
+    this._checkDrop(input);
+    this._checkAttack(input);
+    this._checkSelfDamage(input);
+
+    if (this.bowCharging) {
+      this._aimX = input.mouse.x + this.camera.x;
+      this._aimY = input.mouse.y + this.camera.y;
+      const item = this.inventory.slots[this.inventory.selected];
+      if (!item || item.name !== 'Bow') {
+        this.bowCharging = false;
+      } else if (this._prevRightClicked && !input.mouse.rightClicked) {
+        this._fireArrow();
+      }
+    }
+    this._prevRightClicked = input.mouse.rightClicked;
+    this._prevSelectedSlot = this.inventory.selected;
+    if (this.attackCooldown > 0) this.attackCooldown -= dt;
+    if (this.slashEffect) {
+      this.slashEffect.timer -= dt;
+      if (this.slashEffect.timer <= 0) this.slashEffect = null;
+    }
+    for (let i = this.projectiles.length - 1; i >= 0; i--) {
+      const p = this.projectiles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.dist += Math.sqrt(p.vx * p.vx + p.vy * p.vy) * dt;
+
+      let hitRock = false;
+      for (const rock of this.rocks) {
+        const rdx = rock.x - p.x;
+        const rdy = rock.y - p.y;
+        if (rdx * rdx + rdy * rdy < rock.radius * rock.radius) {
+          hitRock = true;
+          break;
+        }
+      }
+      if (hitRock) {
+        this.projectiles.splice(i, 1);
+        continue;
+      }
+
+      const bx = this.bot.x + this.bot.width / 2;
+      const by = this.bot.y + this.bot.height / 2;
+      const pdx = bx - p.x;
+      const pdy = by - p.y;
+      if (pdx * pdx + pdy * pdy < 20 * 20) {
+        this.bot.takeDamage(p.damage);
+        this.projectiles.splice(i, 1);
+        continue;
+      }
+
+      if (p.dist >= p.maxRange) {
+        this.projectiles.splice(i, 1);
+      }
+    }
+    input.clearFrame();
+  }
+
+  _checkPickup(input) {
+    const px = this.player.x + this.player.width / 2;
+    const py = this.player.y + this.player.height / 2;
+    this._nearbyItem = null;
+    for (const item of this.items) {
+      if (item.collected) continue;
+      const dx = px - item.x;
+      const dy = py - item.y;
+      const dist2 = dx * dx + dy * dy;
+      if (dist2 < 30 * 30) {
+        this._nearbyItem = item;
+        if (input.justPressed('KeyE') || input.justPressed('Space')) {
+          const empty = this.inventory.slots.findIndex(s => s === null);
+          if (empty !== -1) {
+            this.inventory.slots[empty] = { name: item.name, color: item.color };
+            item.collected = true;
+            this._nearbyItem = null;
+          }
+        }
+        break;
+      }
+    }
+  }
+
+  _checkDrop(input) {
+    if (input.justPressed('KeyQ')) {
+      const item = this.inventory.slots[this.inventory.selected];
+      if (item) {
+        this.inventory.slots[this.inventory.selected] = null;
+        this.items.push({
+          x: this.player.x + this.player.width / 2 + (Math.random() - 0.5) * 20,
+          y: this.player.y + this.player.height / 2 + (Math.random() - 0.5) * 20,
+          name: item.name,
+          color: item.color,
+          collected: false,
+        });
+      }
+    }
+  }
+
+  _checkAttack(input) {
+    const item = this.inventory.slots[this.inventory.selected];
+    if (!item) return;
+
+    if (item.name === 'Knife' && input.mouse.rightJustClicked) {
+      this.inventory.slots[this.inventory.selected] = null;
+      const px = this.player.x + this.player.width / 2;
+      const py = this.player.y + this.player.height / 2;
+      const mx = input.mouse.x + this.camera.x;
+      const my = input.mouse.y + this.camera.y;
+      const angle = Math.atan2(my - py, mx - px);
+      const speed = 400;
+      this.projectiles.push({
+        x: px, y: py,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        dist: 0, maxRange: 250,
+        damage: 50, icon: 'Knife', color: '#ef5350',
+      });
+      return;
+    }
+
+    if (item.name === 'Bow' && input.mouse.rightJustClicked) {
+      this._aimX = input.mouse.x + this.camera.x;
+      this._aimY = input.mouse.y + this.camera.y;
+      this.bowCharging = true;
+      this.bowChargeStart = this.time;
+      return;
+    }
+
+    if (item.name === 'Heal' && input.mouse.rightJustClicked) {
+      if (this.player.hp < this.player.maxHp) {
+        this.player.hp = this.player.maxHp;
+        this.inventory.slots[this.inventory.selected] = null;
+      }
+      return;
+    }
+
+    if (this.attackCooldown > 0) return;
+    if (!input.mouse.justClicked) return;
+
+    const px = this.player.x + this.player.width / 2;
+    const py = this.player.y + this.player.height / 2;
+    const mx = input.mouse.x + this.camera.x;
+    const my = input.mouse.y + this.camera.y;
+    const angle = Math.atan2(my - py, mx - px);
+
+    const range = 60;
+    const cone = Math.PI / 4;
+    let damage = 0;
+    if (item.name === 'Sword') { damage = 30; this.attackCooldown = 0.4; }
+    else if (item.name === 'Axe') { damage = 50; this.attackCooldown = 0.7; }
+    else if (item.name === 'Knife') { damage = 15; this.attackCooldown = 0.3; }
+    else { return; }
+
+    const bx = this.bot.x + this.bot.width / 2;
+    const by = this.bot.y + this.bot.height / 2;
+    const bdx = bx - px;
+    const bdy = by - py;
+    const bdist = Math.sqrt(bdx * bdx + bdy * bdy);
+    if (bdist > range) return;
+
+    const bang = Math.atan2(bdy, bdx);
+    let diff = bang - angle;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    if (Math.abs(diff) > cone) return;
+
+    this.bot.takeDamage(damage);
+    this.slashEffect = { x: bx, y: by, timer: 0.2, angle };
+  }
+
+  _checkSelfDamage(input) {
+    if (input.justPressed('KeyG')) {
+      this.player.hp = Math.max(0, this.player.hp - 20);
+    }
+  }
+
+  _fireArrow() {
+    this.bowCharging = false;
+    const charge = Math.min(this.time - this.bowChargeStart, 2);
+    const t = charge / 2;
+    const speed = 300 + t * 300;
+    const maxRange = 200 + t * 300;
+    const damage = Math.round(10 + t * 50);
+
+    const px = this.player.x + this.player.width / 2;
+    const py = this.player.y + this.player.height / 2;
+    const mx = this._aimX !== undefined ? this._aimX : px;
+    const my = this._aimY !== undefined ? this._aimY : py;
+    const angle = Math.atan2(my - py, mx - px);
+
+    this.projectiles.push({
+      x: px, y: py,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      dist: 0, maxRange,
+      damage, icon: 'Arrow', color: '#8bc34a',
+    });
+  }
+
+  _constrainPlayer() {
+    const p = this.player;
+    const cx = p.x + p.width / 2;
+    const cy = p.y + p.height / 2;
+    const dx = cx - ARENA_CX;
+    const dy = cy - ARENA_CY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const maxDist = ARENA_RADIUS - Math.max(p.width, p.height) / 2;
+    if (dist > maxDist) {
+      const ratio = maxDist / dist;
+      p.x = ARENA_CX + dx * ratio - p.width / 2;
+      p.y = ARENA_CY + dy * ratio - p.height / 2;
+    }
+  }
+
+  render(ctx) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(-this.camera.x, -this.camera.y);
+
+    for (const s of this.stars) {
+      if (!this._isVisible(s.x, s.y, 5)) continue;
+      const twinkle = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(this.time * 1.5 + s.phase));
+      ctx.globalAlpha = twinkle;
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    ctx.drawImage(this.bgCanvas, this.bgOffsetX, this.bgOffsetY);
+
+    for (const d of this.darkPatches) {
+      if (!this._isVisible(d.x, d.y, Math.max(d.rx, d.ry))) continue;
+      ctx.fillStyle = `rgba(30,35,25,${d.alpha})`;
+      ctx.beginPath();
+      ctx.ellipse(d.x, d.y, d.rx, d.ry, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(ARENA_CX, ARENA_CY, ARENA_RADIUS, 0, Math.PI * 2);
+    ctx.clip();
+
+    for (const g of this.grassTufts) {
+      if (!this._isVisible(g.x, g.y)) continue;
+      for (const blade of g.blades) {
+        const sway = Math.sin(this.time * 2.5 + g.phase + blade.phase) * 5;
+        const baseX = g.x + blade.ox * 0.3;
+        const topX = g.x + blade.ox + sway;
+        const topY = g.y - blade.height;
+
+        ctx.strokeStyle = GRASS_COLOR;
+        ctx.lineWidth = blade.thickness;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(baseX, g.y);
+        ctx.lineTo(topX, topY);
+        ctx.stroke();
+
+        ctx.strokeStyle = GRASS_HIGHLIGHT;
+        ctx.lineWidth = blade.thickness * 0.5;
+        ctx.beginPath();
+        ctx.moveTo(baseX, g.y - 2);
+        ctx.lineTo(topX, topY);
+        ctx.stroke();
+      }
+    }
+
+    for (const b of this.bushes) {
+      if (!this._isVisible(b.x, b.y)) continue;
+      ctx.beginPath();
+      ctx.arc(b.x, b.y, 14, 0, Math.PI * 2);
+      ctx.fillStyle = '#4a7c3f';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(b.x + 6, b.y - 5, 9, 0, Math.PI * 2);
+      ctx.fillStyle = '#5a8f4a';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(b.x - 4, b.y - 2, 7, 0, Math.PI * 2);
+      ctx.fillStyle = '#6a9a5a';
+      ctx.fill();
+    }
+
+    for (const rock of this.rocks) {
+      if (!this._isVisible(rock.x, rock.y, rock.radius + 10)) continue;
+      ctx.fillStyle = '#5d4e37';
+      ctx.beginPath();
+      ctx.arc(rock.x, rock.y, rock.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#6d5e47';
+      ctx.beginPath();
+      ctx.arc(rock.x - rock.radius * 0.2, rock.y - rock.radius * 0.2, rock.radius * 0.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#4a3d2a';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (const item of this.items) {
+      if (item.collected || !this._isVisible(item.x, item.y, 20)) continue;
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath();
+      ctx.arc(item.x, item.y, 10, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      drawItemIcon(ctx, item.x, item.y, 12, item.name, item.color);
+    }
+
+    if (this.slashEffect) {
+      ctx.strokeStyle = `rgba(255,255,255,${this.slashEffect.timer / 0.2})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      const a = this.slashEffect.angle;
+      ctx.arc(this.slashEffect.x, this.slashEffect.y, 30, a - 0.8, a + 0.8);
+      ctx.stroke();
+    }
+
+    for (const p of this.projectiles) {
+      if (!this._isVisible(p.x, p.y, 20)) continue;
+      drawItemIcon(ctx, p.x, p.y, 14, p.icon, p.color);
+    }
+
+    this.bot.render(ctx);
+
+    this.player.render(ctx);
+
+    const heldItem = this.inventory.slots[this.inventory.selected];
+    if (heldItem) {
+      const hand = this.player.getRightHandPos();
+      drawItemIcon(ctx, hand.x, hand.y, 24, heldItem.name, heldItem.color);
+    }
+
+    if (this._nearbyItem) {
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(this._nearbyItem.x - 14, this._nearbyItem.y - 34, 28, 20);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(this._nearbyItem.x - 14, this._nearbyItem.y - 34, 28, 20);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('E', this._nearbyItem.x, this._nearbyItem.y - 24);
+    }
+
+    ctx.restore();
+    ctx.restore();
+
+    this.inventory.render(ctx, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`HP: ${this.player.hp}/${this.player.maxHp}`, 12, 12);
+
+    if (this.bowCharging) {
+      const charge = Math.min((this.time - this.bowChargeStart) / 2, 1);
+      const barW = 100;
+      const barH = 10;
+      const bx = (canvas.width - barW) / 2;
+      const by = canvas.height - 30;
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(bx, by, barW, barH);
+      ctx.fillStyle = '#8bc34a';
+      ctx.fillRect(bx, by, barW * charge, barH);
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(bx, by, barW, barH);
+    }
+  }
+})();
+
+engine.addScene('game', gameScene);
+
+function startGame() {
+  const screens = ['welcome', 'quiz-screen', 'favspot-screen', 'summary-screen'];
+  screens.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  canvas.style.display = 'block';
+  resizeCanvas();
+  engine.start('game');
+}
+
+function stopGame() {
+  engine.stop();
+  canvas.style.display = 'none';
+}
+
+window.addEventListener('resize', () => {
+  if (canvas.style.display !== 'none') resizeCanvas();
+});

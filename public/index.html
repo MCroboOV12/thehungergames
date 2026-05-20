@@ -1,0 +1,88 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Hunger Games</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/css/quiz.css">
+</head>
+<body>
+  <div id="app">
+    <div id="welcome">
+      <div class="welcome-top">
+        <h1>The Hunger Games</h1>
+        <p class="subtitle" id="subtitle">Willkommen zu den Hungerspielen</p>
+
+        <div class="language-menu">
+          <label for="lang-select" id="lang-label">Sprache / Language</label>
+          <select id="lang-select">
+            <option value="de" selected>Deutsch</option>
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+            <option value="es">Español</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="menu-buttons">
+        <button class="btn btn-secondary" id="btn-quiz">Quiz starten</button>
+        <hr class="btn-separator">
+        <button class="btn btn-secondary" id="btn-favspot">Lieblingsstelle</button>
+        <hr class="btn-separator">
+        <button class="btn btn-secondary" id="btn-summary">Zusammenfassung</button>
+        <hr class="btn-separator">
+        <button class="btn btn-secondary" id="btn-game">Spiel</button>
+      </div>
+    </div>
+    <div id="quiz-screen">
+      <span class="quiz-progress" id="quiz-progress"></span>
+      <p class="quiz-question" id="quiz-question"></p>
+      <div class="quiz-options" id="quiz-options"></div>
+      <p class="quiz-feedback" id="quiz-feedback"></p>
+      <button class="quiz-next-btn" id="quiz-next">Weiter</button>
+      <div class="quiz-result" id="quiz-result">
+        <h2 id="result-title">Ergebnis</h2>
+        <p class="score" id="quiz-score"></p>
+        <button class="btn btn-secondary" id="btn-back-menu">Zur\u00fcck zum Men\u00fc</button>
+      </div>
+    </div>
+    <div id="favspot-screen">
+      <h1>The Hunger Games</h1>
+      <div class="favspot-content" id="favspot-content">
+        <p id="favspot-text">Lieblingsstelle wird hier erscheinen...</p>
+      </div>
+      <button class="btn btn-secondary" id="btn-back-favspot">Zur\u00fcck zum Men\u00fc</button>
+    </div>
+    <div id="summary-screen">
+      <h1>The Hunger Games</h1>
+      <div class="favspot-content" id="summary-content">
+        <p id="summary-text">Zusammenfassung wird hier erscheinen...</p>
+      </div>
+      <button class="btn btn-secondary" id="btn-back-summary">Zur\u00fcck zum Men\u00fc</button>
+    </div>
+    <canvas id="gameCanvas" style="display:none"></canvas>
+  </div>
+  <select id="lang-top">
+    <option value="de">Deutsch</option>
+    <option value="en">English</option>
+    <option value="fr">Français</option>
+    <option value="es">Español</option>
+  </select>
+  <script src="/js/game/engine.js"></script>
+  <script src="/js/game/input.js"></script>
+  <script src="/js/game/scene.js"></script>
+  <script src="/js/game/entity.js"></script>
+  <script src="/js/game/player.js"></script>
+  <script src="/js/game/world.js"></script>
+  <script src="/js/game/camera.js"></script>
+  <script src="/js/game/inventory.js"></script>
+  <script src="/js/game/bot.js"></script>
+  <script src="/js/game/game.js"></script>
+  <script src="/js/quiz.js"></script>
+  <script src="/js/game.js"></script>
+</body>
+</html>
+
+
+
