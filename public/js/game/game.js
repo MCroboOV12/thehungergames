@@ -494,9 +494,8 @@ const gameScene = new (class extends Scene {
     for (const g of this.grassTufts) {
       if (!this._isVisible(g.x, g.y)) continue;
       for (const blade of g.blades) {
-        const sway = Math.sin(this.time * 2.5 + g.phase + blade.phase) * 5;
         const baseX = g.x + blade.ox * 0.3;
-        const topX = g.x + blade.ox + sway;
+        const topX = g.x + blade.ox;
         const topY = g.y - blade.height;
 
         ctx.strokeStyle = GRASS_COLOR;
