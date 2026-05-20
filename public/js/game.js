@@ -6,6 +6,8 @@ const translations = {
     btnFavspot: 'Lieblingsstelle',
     btnSummary: 'Zusammenfassung',
     btnGame: 'Spiel',
+    btnCharacters: 'Charaktere',
+    btnBackCharacters: 'Zur\u00fcck zum Men\u00fc',
     btnBackFavspot: 'Zur\u00fcck zum Men\u00fc',
     next: 'Weiter',
     resultTitle: 'Ergebnis',
@@ -44,7 +46,9 @@ const translations = {
     btnQuiz: 'Start Quiz',
     btnFavspot: 'Favorite Spot',
     btnSummary: 'Summary',
+    btnCharacters: 'Characters',
     btnGame: 'Game',
+    btnBackCharacters: 'Back to Menu',
     btnBackFavspot: 'Back to Menu',
     next: 'Next',
     resultTitle: 'Result',
@@ -83,6 +87,9 @@ const translations = {
     btnQuiz: 'Commencer le quiz',
     btnFavspot: 'Endroit favori',
     btnSummary: 'Résumé',
+    btnCharacters: 'Personnages',
+    btnGame: 'Jeu',
+    btnBackCharacters: 'Retour au menu',
     btnBackFavspot: 'Retour au menu',
     next: 'Suivant',
     resultTitle: 'R\u00e9sultat',
@@ -121,7 +128,9 @@ const translations = {
     btnQuiz: 'Comenzar cuestionario',
     btnFavspot: 'Lugar favorito',
     btnSummary: 'Resumen',
+    btnCharacters: 'Personajes',
     btnGame: 'Juego',
+    btnBackCharacters: 'Volver al men\u00fa',
     btnBackFavspot: 'Volver al men\u00fa',
     next: 'Siguiente',
     resultTitle: 'Resultado',
@@ -156,6 +165,49 @@ const translations = {
   },
 };
 
+const charactersData = {
+  de: [
+    { name: 'Katniss Everdeen', desc: 'Die 16-jährige Protagonistin. Sie meldet sich freiwillig anstelle ihrer kleinen Schwester Prim. Eine brillante Bogenschützin und Überlebenskünstlerin.' },
+    { name: 'Peeta Mellark', desc: 'Der männliche Tribut aus Distrikt 12. Er ist freundlich, einfühlsam und seit seiner Kindheit in Katniss verliebt. Ein geschickter Händler und Tarnungskünstler.' },
+    { name: 'Gale Hawthorne', desc: 'Katniss\' bester Freund und Jagdpartner. Er ist mutig, rebellisch und hasst das Kapitol. Später wird er zum Symbol der Rebellion.' },
+    { name: 'Haymitch Abernathy', desc: 'Der einzige lebende Sieger aus Distrikt 12. Ein alkoholkranker, aber strategisch brillanter Mentor für Katniss und Peeta.' },
+    { name: 'Effie Trinket', desc: 'Die extravagante Betreuerin aus dem Kapitol, die Katniss und Peeta zu den Spielen begleitet. Sie liebt protzige Mode und Etikette.' },
+    { name: 'Rue', desc: 'Die 12-jährige Tributin aus Distrikt 11. Klein und wendig, erinnert sie Katniss an ihre Schwester Prim. Sie schließen ein Bündnis.' },
+    { name: 'Präsident Snow', desc: 'Der tyrannische Herrscher von Panem. Kalt, berechnend und manipulierend. Er tut alles, um seine Macht zu erhalten.' },
+    { name: 'Cinna', desc: 'Katniss\' Stylist, der ihr das berühmte "lodernde" Kleid entwirft. Er ist freundlich, kreativ und heimlich ein Verbündeter der Rebellion.' },
+  ],
+  en: [
+    { name: 'Katniss Everdeen', desc: 'The 16-year-old protagonist. She volunteers as tribute to save her younger sister Prim. A brilliant archer and survivalist.' },
+    { name: 'Peeta Mellark', desc: 'The male tribute from District 12. Kind-hearted, empathetic, and in love with Katniss since childhood. A skilled baker and camouflage artist.' },
+    { name: 'Gale Hawthorne', desc: 'Katniss\' best friend and hunting partner. Brave, rebellious, and hates the Capitol. Later becomes a symbol of the rebellion.' },
+    { name: 'Haymitch Abernathy', desc: 'The only living victor from District 12. An alcoholic but strategically brilliant mentor for Katniss and Peeta.' },
+    { name: 'Effie Trinket', desc: 'The extravagant Capitol escort who accompanies Katniss and Peeta to the Games. Loves flashy fashion and etiquette.' },
+    { name: 'Rue', desc: 'The 12-year-old tribute from District 11. Small and agile, she reminds Katniss of her sister Prim. They form an alliance.' },
+    { name: 'President Snow', desc: 'The tyrannical ruler of Panem. Cold, calculating, and manipulative. He will do anything to maintain his power.' },
+    { name: 'Cinna', desc: 'Katniss\' stylist who designs her famous "girl on fire" dress. Kind, creative, and secretly an ally of the rebellion.' },
+  ],
+  fr: [
+    { name: 'Katniss Everdeen', desc: 'L\'héroïne de 16 ans. Elle se porte volontaire comme tribut pour sauver sa petite sœur Prim. Une archère et survivante brillante.' },
+    { name: 'Peeta Mellark', desc: 'Le tribut masculin du District 12. Gentil, empathique et amoureux de Katniss depuis l\'enfance. Un habile boulanger et artiste du camouflage.' },
+    { name: 'Gale Hawthorne', desc: 'Le meilleur ami et partenaire de chasse de Katniss. Courageux, rebelle, il déteste le Capitole. Devient plus tard un symbole de la rébellion.' },
+    { name: 'Haymitch Abernathy', desc: 'Le seul vainqueur vivant du District 12. Alcoolique mais mentor stratégiquement brillant pour Katniss et Peeta.' },
+    { name: 'Effie Trinket', desc: 'L\'extravagante accompagnatrice du Capitole. Aime la mode clinquante et l\'étiquette. Accompagne Katniss et Peeta aux Jeux.' },
+    { name: 'Rue', desc: 'La tribut de 12 ans du District 11. Petite et agile, elle rappelle à Katniss sa sœur Prim. Elles forment une alliance.' },
+    { name: 'Président Snow', desc: 'Le souverain tyrannique de Panem. Froid, calculateur et manipulateur. Il fera tout pour maintenir son pouvoir.' },
+    { name: 'Cinna', desc: 'Le styliste de Katniss qui crée sa célèbre robe "fille en feu". Gentil, créatif et secrètement allié de la rébellion.' },
+  ],
+  es: [
+    { name: 'Katniss Everdeen', desc: 'La protagonista de 16 años. Se ofrece como tributo para salvar a su hermana pequeña Prim. Una brillante arquera y superviviente.' },
+    { name: 'Peeta Mellark', desc: 'El tributo masculino del Distrito 12. Amable, empático y enamorado de Katniss desde la infancia. Un hábil panadero y artista del camuflaje.' },
+    { name: 'Gale Hawthorne', desc: 'El mejor amigo y compañero de caza de Katniss. Valiente, rebelde y odia el Capitolio. Más tarde se convierte en símbolo de la rebelión.' },
+    { name: 'Haymitch Abernathy', desc: 'El único vencedor vivo del Distrito 12. Alcohólico pero mentor estratégicamente brillante para Katniss y Peeta.' },
+    { name: 'Effie Trinket', desc: 'La extravagante acompañante del Capitolio. Ama la moda llamativa y la etiqueta. Acompaña a Katniss y Peeta a los Juegos.' },
+    { name: 'Rue', desc: 'La tributo de 12 años del Distrito 11. Pequeña y ágil, le recuerda a Katniss a su hermana Prim. Forman una alianza.' },
+    { name: 'Presidente Snow', desc: 'El tiránico gobernante de Panem. Frío, calculador y manipulador. Hará cualquier cosa para mantener su poder.' },
+    { name: 'Cinna', desc: 'El estilista de Katniss que diseña su famoso vestido "chica en llamas". Amable, creativo y secretamente aliado de la rebelión.' },
+  ],
+};
+
 const langSelect = document.getElementById('lang-select');
 const subtitle = document.getElementById('subtitle');
 const langLabel = document.getElementById('lang-label');
@@ -181,6 +233,10 @@ const summaryText = document.getElementById('summary-text');
 const btnBackSummary = document.getElementById('btn-back-summary');
 const btnSummary = document.getElementById('btn-summary');
 const btnGame = document.getElementById('btn-game');
+const charactersScreen = document.getElementById('characters-screen');
+const charactersContent = document.getElementById('characters-content');
+const btnCharacters = document.getElementById('btn-characters');
+const btnBackCharacters = document.getElementById('btn-back-characters');
 const langTop = document.getElementById('lang-top');
 const endgameOverlay = document.getElementById('endgame-overlay');
 const endgameTitle = document.getElementById('endgame-title');
@@ -241,6 +297,8 @@ function applyLanguage(lang) {
   btnEndgameAnother.textContent = t.endgameAnother;
   btnEndgameHome.textContent = t.endgameHome;
   btnCustom.textContent = t.btnCustom;
+  btnCharacters.textContent = t.btnCharacters;
+  btnBackCharacters.textContent = t.btnBackCharacters || t.backMenu;
   namePromptTitle.textContent = t.namePromptTitle;
   btnNameSubmit.textContent = t.nameSubmit;
   btnNameBack.textContent = t.nameBack;
@@ -308,6 +366,9 @@ function setLanguage(lang) {
       .then(text => { summaryText.innerHTML = text; })
       .catch(() => { summaryText.innerHTML = t.summaryPlaceholder; });
   }
+  if (charactersScreen.classList.contains('active')) {
+    renderCharacters(lang);
+  }
 }
 
 langSelect.addEventListener('change', () => setLanguage(langSelect.value));
@@ -319,6 +380,7 @@ function showWelcome() {
   quizScreen.classList.remove('active');
   favspotScreen.classList.remove('active');
   summaryScreen.classList.remove('active');
+  charactersScreen.classList.remove('active');
   endgameOverlay.classList.remove('active');
   namePrompt.classList.remove('active');
   adminPanel.classList.remove('active');
@@ -329,6 +391,13 @@ function showWelcome() {
   gameSelectLobby.style.display = 'none';
   langTop.classList.remove('visible');
   currentQuiz = null;
+}
+
+function renderCharacters(lang) {
+  const chars = charactersData[lang] || charactersData.en;
+  charactersContent.innerHTML = chars.map(c =>
+    `<span class="char-name">${c.name}</span><p>${c.desc}</p>`
+  ).join('');
 }
 
 function startQuiz() {
@@ -484,6 +553,19 @@ function getWsUrl() {
   const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
   return `${protocol}//${loc.host}`;
 }
+
+btnCharacters.addEventListener('click', () => {
+  const lang = langSelect.value;
+  welcome.style.display = 'none';
+  charactersScreen.classList.add('active');
+  langTop.classList.add('visible');
+  renderCharacters(lang);
+});
+
+btnBackCharacters.addEventListener('click', () => {
+  charactersScreen.classList.remove('active');
+  showWelcome();
+});
 
 btnCustom.addEventListener('click', () => {
   welcome.style.display = 'none';
