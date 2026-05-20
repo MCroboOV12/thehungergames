@@ -18,6 +18,16 @@ const translations = {
     summaryPlaceholder: 'Zusammenfassung wird hier erscheinen...',
     endgameAnother: 'Noch eine Runde',
     endgameHome: 'Hauptmen\u00fc',
+    btnCustom: 'Custom Game',
+    namePromptTitle: 'Gib deinen Namen ein',
+    nameSubmit: 'Beitreten',
+    nameBack: 'Zur\u00fcck',
+    adminTitle: 'Admin-Bereich',
+    adminInfo: 'Hier kommen benutzerdefinierte Spieleinstellungen hin.',
+    adminBack: 'Zur\u00fcck',
+    gameSelectTitle: 'W\u00e4hle ein Spiel',
+    gameSelectEmpty: 'Keine Spiele verf\u00fcgbar.',
+    gameSelectBack: 'Zur\u00fcck',
   },
   en: {
     subtitle: 'Welcome to the Hunger Games',
@@ -38,6 +48,16 @@ const translations = {
     summaryPlaceholder: 'Summary will appear here...',
     endgameAnother: 'Another Round',
     endgameHome: 'Main Menu',
+    btnCustom: 'Custom Game',
+    namePromptTitle: 'Enter your name',
+    nameSubmit: 'Join',
+    nameBack: 'Back',
+    adminTitle: 'Admin Panel',
+    adminInfo: 'Custom game settings will go here.',
+    adminBack: 'Back',
+    gameSelectTitle: 'Select a Game',
+    gameSelectEmpty: 'No games available.',
+    gameSelectBack: 'Back',
   },
   fr: {
     subtitle: 'Bienvenue aux Hunger Games',
@@ -58,6 +78,16 @@ const translations = {
     summaryPlaceholder: 'Le résumé apparaîtra ici...',
     endgameAnother: 'Encore une manche',
     endgameHome: 'Menu principal',
+    btnCustom: 'Custom Game',
+    namePromptTitle: 'Entrez votre nom',
+    nameSubmit: 'Rejoindre',
+    nameBack: 'Retour',
+    adminTitle: 'Panneau d\'administration',
+    adminInfo: 'Les paramètres du jeu personnalisé apparaîtront ici.',
+    adminBack: 'Retour',
+    gameSelectTitle: 'Choisir un jeu',
+    gameSelectEmpty: 'Aucun jeu disponible.',
+    gameSelectBack: 'Retour',
   },
   es: {
     subtitle: 'Bienvenido a los Juegos del Hambre',
@@ -78,6 +108,16 @@ const translations = {
     summaryPlaceholder: 'El resumen aparecer\u00e1 aqu\u00ed...',
     endgameAnother: 'Otra ronda',
     endgameHome: 'Men\u00fa principal',
+    btnCustom: 'Custom Game',
+    namePromptTitle: 'Introduce tu nombre',
+    nameSubmit: 'Unirse',
+    nameBack: 'Volver',
+    adminTitle: 'Panel de administraci\u00f3n',
+    adminInfo: 'La configuraci\u00f3n del juego personalizado aparecer\u00e1 aqu\u00ed.',
+    adminBack: 'Volver',
+    gameSelectTitle: 'Seleccionar un juego',
+    gameSelectEmpty: 'No hay juegos disponibles.',
+    gameSelectBack: 'Volver',
   },
 };
 
@@ -111,6 +151,20 @@ const endgameOverlay = document.getElementById('endgame-overlay');
 const endgameTitle = document.getElementById('endgame-title');
 const btnEndgameAnother = document.getElementById('endgame-another');
 const btnEndgameHome = document.getElementById('endgame-home');
+const btnCustom = document.getElementById('btn-custom');
+const namePrompt = document.getElementById('name-prompt');
+const nameInput = document.getElementById('name-input');
+const namePromptTitle = document.getElementById('name-prompt-title');
+const btnNameSubmit = document.getElementById('name-submit');
+const btnNameBack = document.getElementById('name-back');
+const adminPanel = document.getElementById('admin-panel');
+const adminTitle = document.querySelector('#admin-panel h2');
+const adminInfo = document.getElementById('admin-info');
+const btnAdminBack = document.getElementById('admin-back');
+const gameSelect = document.getElementById('game-select');
+const gameSelectTitle = document.getElementById('game-select-title');
+const gameListEmpty = document.getElementById('game-select-empty');
+const btnGameSelectBack = document.getElementById('game-select-back');
 
 
 let currentQuiz = null;
@@ -132,6 +186,16 @@ function applyLanguage(lang) {
   btnBackSummary.textContent = t.btnBackFavspot;
   btnEndgameAnother.textContent = t.endgameAnother;
   btnEndgameHome.textContent = t.endgameHome;
+  btnCustom.textContent = t.btnCustom;
+  namePromptTitle.textContent = t.namePromptTitle;
+  btnNameSubmit.textContent = t.nameSubmit;
+  btnNameBack.textContent = t.nameBack;
+  adminTitle.textContent = t.adminTitle;
+  adminInfo.textContent = t.adminInfo;
+  btnAdminBack.textContent = t.adminBack;
+  gameSelectTitle.textContent = t.gameSelectTitle;
+  gameSelectEmpty.textContent = t.gameSelectEmpty;
+  btnGameSelectBack.textContent = t.gameSelectBack;
 }
 
 function applyQuizLanguage(lang) {
@@ -192,6 +256,9 @@ function showWelcome() {
   favspotScreen.classList.remove('active');
   summaryScreen.classList.remove('active');
   endgameOverlay.classList.remove('active');
+  namePrompt.classList.remove('active');
+  adminPanel.classList.remove('active');
+  gameSelect.classList.remove('active');
   langTop.classList.remove('visible');
   currentQuiz = null;
 }
@@ -343,6 +410,45 @@ btnEndgameHome.addEventListener('click', () => {
   stopGame();
   showWelcome();
 });
+
+btnCustom.addEventListener('click', () => {
+  welcome.style.display = 'none';
+  namePrompt.classList.add('active');
+  langTop.classList.add('visible');
+  nameInput.value = '';
+  nameInput.focus();
+});
+
+btnNameSubmit.addEventListener('click', () => {
+  const name = nameInput.value.trim();
+  if (!name) return;
+  namePrompt.classList.remove('active');
+  if (name.toLowerCase() === 'admin') {
+    adminPanel.classList.add('active');
+  } else {
+    gameSelect.classList.add('active');
+  }
+});
+
+nameInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') btnNameSubmit.click();
+});
+
+btnNameBack.addEventListener('click', () => {
+  namePrompt.classList.remove('active');
+  showWelcome();
+});
+
+btnAdminBack.addEventListener('click', () => {
+  adminPanel.classList.remove('active');
+  showWelcome();
+});
+
+btnGameSelectBack.addEventListener('click', () => {
+  gameSelect.classList.remove('active');
+  showWelcome();
+});
+
 const browserLang = (navigator.language || 'en').slice(0, 2);
 const supported = ['de', 'en', 'fr', 'es'];
 if (supported.includes(browserLang)) {
