@@ -241,7 +241,7 @@ const gameScene = new (class extends Scene {
   update(dt) {
     this.time += dt;
     this.player.update(dt, input);
-    this.bot.update(dt, this.player, this.items, this.projectiles, this.rocks);
+    this.bot.update(dt, this.player, this.items, this.projectiles);
     this._constrainPlayer();
     this._constrainBot();
     this.camera.follow(this.player, canvas.width, canvas.height);
@@ -294,7 +294,7 @@ const gameScene = new (class extends Scene {
         const pdx = bx - p.x;
         const pdy = by - p.y;
         if (pdx * pdx + pdy * pdy < 20 * 20) {
-          this.bot.takeDamage(p.damage);
+          this.bot.takeDamage(p.damage, this.items);
           this.projectiles.splice(i, 1);
           continue;
         }
@@ -425,7 +425,7 @@ const gameScene = new (class extends Scene {
     while (diff < -Math.PI) diff += Math.PI * 2;
     if (Math.abs(diff) > cone) return;
 
-    this.bot.takeDamage(damage);
+    this.bot.takeDamage(damage, this.items);
     this.slashEffect = { x: bx, y: by, timer: 0.2, angle };
   }
 

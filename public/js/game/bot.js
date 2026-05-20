@@ -15,14 +15,59 @@ class Bot extends Entity {
     this.inventory = [null, null, null];
     this.selectedSlot = 0;
     this.retreatThreshold = 0.3;
+    this.alive = true;
+    this.respawnTimer = 0;
   }
 
-  takeDamage(amount) {
+  takeDamage(amount, items) {
     this.hp = Math.max(0, this.hp - amount);
     this.hurtTimer = 0.15;
+    if (this.hp <= 0) {
+      this.alive = false;
+      this.respawnTimer = 5;
+      this.vx = 0;
+      this.vy = 0;
+      if (items) this._dropItems(items);
+    }
   }
 
-  update(dt, player, items, projectiles, rocks) {
+  _dropItems(items) {
+    for (const slot of this.inventory) {
+      if (slot) {
+        items.push({
+          x: this.x + this.width / 2 + (Math.random() - 0.5) * 30,
+          y: this.y + this.height / 2 + (Math.random() - 0.5) * 30,
+          name: slot.name,
+          color: slot.color,
+          collected: false,
+        });
+      }
+    }
+    this.inventory = [null, null, null];
+  }
+
+  respawn() {
+    const angle = Math.random() * Math.PI * 2;
+    const r = Math.sqrt(Math.random()) * 500 + 100;
+    this.x = ARENA_CX + Math.cos(angle) * r - this.width / 2;
+    this.y = ARENA_CY + Math.sin(angle) * r - this.height / 2;
+    this.hp = this.maxHp;
+    this.hurtTimer = 0;
+    this.alive = true;
+    this.state = 'wander';
+    this.stateTimer = 0;
+    this.wanderTarget = null;
+    this.attackCooldown = 0;
+    this.inventory = [null, null, null];
+  }
+
+  update(dt, player, items, projectiles) {
+    if (!this.alive) {
+      this.respawnTimer -= dt;
+      if (this.respawnTimer <= 0) this.respawn();
+      return;
+    }
+
     if (this.hurtTimer > 0) this.hurtTimer -= dt;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
 
@@ -42,7 +87,7 @@ class Bot extends Entity {
     } else if (dist < this.detectionRange) {
       if (dist < this.attackRange && this._hasWeapon()) {
         this.state = 'attack';
-      } else if (dist < this.detectionRange) {
+      } else {
         this.state = 'chase';
       }
     } else {
@@ -64,13 +109,13 @@ class Bot extends Entity {
         this._doWander(dt);
         break;
       case 'chase':
-        this._doChase(px, py, player);
+        this._doChase(px, py);
         break;
       case 'attack':
         this._doAttack(player, projectiles, dist, px, py, bx, by);
         break;
       case 'retreat':
-        this._doRetreat(px, py);
+        this._doRetreat(px, py, bx, by);
         break;
       case 'pickup':
         this._doPickup(items, bx, by);
@@ -81,34 +126,28 @@ class Bot extends Entity {
   _doWander(dt) {
     this.stateTimer -= dt;
     if (this.stateTimer <= 0 || !this.wanderTarget) {
-      this.wanderTarget = {
-        x: ARENA_CX + (Math.random() - 0.5) * 200,
-        y: ARENA_CY + (Math.random() - 0.5) * 200,
-      };
+      const angle = Math.random() * Math.PI * 2;
+      const r = Math.random() * 200;
+      this.wanderTarget = { x: ARENA_CX + Math.cos(angle) * r, y: ARENA_CY + Math.sin(angle) * r };
       this.stateTimer = 2 + Math.random() * 3;
     }
     this._moveToward(this.wanderTarget.x, this.wanderTarget.y);
   }
 
-  _doChase(px, py, player) {
-    if (this._hasRangedWeapon() && Math.random() < 0.02) {
-      this.state = 'attack';
-    }
+  _doChase(px, py) {
     this._moveToward(px, py);
   }
 
   _doAttack(player, projectiles, dist, px, py, bx, by) {
     if (this.attackCooldown > 0) return;
     const item = this.inventory[this.selectedSlot];
-    if (!item) {
-      this.state = 'chase';
-      return;
-    }
+    if (!item) { this.state = 'chase'; return; }
 
     if (item.name === 'Heal' && this.hp < this.maxHp) {
       this.hp = this.maxHp;
       this.inventory[this.selectedSlot] = null;
       this.attackCooldown = 0.5;
+      this._equipBest();
       return;
     }
 
@@ -117,7 +156,6 @@ class Bot extends Entity {
       const dmg = item.name === 'Sword' ? 30 : 50;
       this.attackCooldown = item.name === 'Sword' ? 0.4 : 0.7;
       player.hp = Math.max(0, player.hp - dmg);
-      this._targetSlot = this.selectedSlot;
     }
 
     if (item.name === 'Knife') {
@@ -155,13 +193,29 @@ class Bot extends Entity {
     });
   }
 
-  _doRetreat(px, py) {
-    this._moveToward(this.x - (px - this.x), this.y - (py - this.y));
+  _doRetreat(px, py, bx, by) {
+    const dx = bx - ARENA_CX;
+    const dy = by - ARENA_CY;
+    const distToCenter = Math.sqrt(dx * dx + dy * dy);
+    const borderDist = ARENA_RADIUS - 60 - distToCenter;
+
+    let tx, ty;
+    if (borderDist < 50) {
+      const angle = Math.atan2(dy, dx) + (Math.random() > 0.5 ? 1 : -1) * Math.PI / 2;
+      tx = bx + Math.cos(angle) * 100;
+      ty = by + Math.sin(angle) * 100;
+    } else {
+      tx = this.x - (px - this.x);
+      ty = this.y - (py - this.y);
+    }
+
+    this._moveToward(tx, ty);
 
     const healSlot = this.inventory.findIndex(i => i && i.name === 'Heal');
     if (healSlot !== -1) {
       this.hp = this.maxHp;
       this.inventory[healSlot] = null;
+      this._equipBest();
     }
 
     if (this.hp / this.maxHp > 0.5) {
@@ -220,10 +274,6 @@ class Bot extends Entity {
     return this.inventory.some(i => i && ['Sword', 'Axe', 'Knife', 'Bow'].includes(i.name));
   }
 
-  _hasRangedWeapon() {
-    return this.inventory.some(i => i && ['Bow', 'Knife'].includes(i.name));
-  }
-
   _hasEmptySlot() {
     return this.inventory.includes(null);
   }
@@ -241,6 +291,8 @@ class Bot extends Entity {
   }
 
   render(ctx) {
+    if (!this.alive) return;
+
     const cx = this.x + this.width / 2;
     const cy = this.y + this.height / 2;
 
