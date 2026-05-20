@@ -481,7 +481,8 @@ btnEndgameHome.addEventListener('click', () => {
 
 function getWsUrl() {
   const loc = window.location;
-  return `ws://${loc.hostname}:${loc.port || 80}`;
+  const protocol = loc.protocol === 'https:' ? 'wss:' : 'ws:';
+  return `${protocol}//${loc.host}`;
 }
 
 btnCustom.addEventListener('click', () => {
