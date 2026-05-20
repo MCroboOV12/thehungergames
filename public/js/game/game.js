@@ -149,9 +149,10 @@ function drawItemIcon(ctx, x, y, s, name, color) {
 }
 
 const gameScene = new (class extends Scene {
-  startMultiplayer(client) {
+  startMultiplayer(client, spawnIndex) {
     this.multiplayerMode = true;
     this.multiplayerClient = client;
+    this.multiplayerSpawnIndex = spawnIndex !== undefined ? spawnIndex : 0;
     this.remotePlayers = {};
     client.on('player_update', (msg) => {
       if (msg.id === client.playerId) return;
@@ -182,7 +183,9 @@ const gameScene = new (class extends Scene {
     this._disconnected = false;
     this.multiplayerMode = !!this.multiplayerMode;
 
-    const pPos = randomPedestalPos(0, BOT_COUNT + 1);
+    const totalSpawns = BOT_COUNT + 1;
+    const spawnIdx = this.multiplayerMode ? this.multiplayerSpawnIndex : 0;
+    const pPos = randomPedestalPos(spawnIdx, totalSpawns);
     this.player = new Player(pPos.x, pPos.y);
     this.camera.x = ARENA_CX - canvas.width / 2;
     this.camera.y = ARENA_CY - canvas.height / 2;

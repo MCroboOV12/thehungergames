@@ -595,7 +595,8 @@ btnGameJoin.addEventListener('click', async () => {
       if (msg.players) updateGamePlayerList(msg.players);
     });
     client.on('join_failed', (msg) => {
-      alert(msg.reason === 'not_found' ? 'Game not found.' : 'Game already started.');
+      const reasons = { not_found: 'Game not found.', started: 'Game already started.', full: 'Game is full (max 8 players).' };
+      alert(reasons[msg.reason] || 'Join failed.');
       client.disconnect();
     });
     client.on('close', () => { if (gameSelect.classList.contains('active')) showWelcome(); });
@@ -634,7 +635,7 @@ gameCodeInput.addEventListener('keydown', (e) => {
 let currentMultiplayerName = '';
 
 function setupGameStartedListener(client) {
-  client.on('game_started', () => {
+  client.on('game_started', (msg) => {
     adminPanel.classList.remove('active');
     gameSelect.classList.remove('active');
     adminForm.style.display = 'flex';
@@ -642,7 +643,8 @@ function setupGameStartedListener(client) {
     gameSelectForm.style.display = 'flex';
     gameSelectLobby.style.display = 'none';
     currentMultiplayerSeed = Date.now();
-    startMultiplayerGame(client);
+    const spawnIndex = msg.spawns ? msg.spawns[client.playerId] || 0 : 0;
+    startMultiplayerGame(client, spawnIndex);
   });
 }
 
@@ -655,7 +657,7 @@ GameClient.prototype.connect = async function(url) {
 };
 
 
-function startMultiplayerGame(client) {
+function startMultiplayerGame(client, spawnIndex) {
   const screens = ['welcome', 'quiz-screen', 'favspot-screen', 'summary-screen'];
   screens.forEach(id => {
     const el = document.getElementById(id);
@@ -665,7 +667,7 @@ function startMultiplayerGame(client) {
   canvas.style.display = 'block';
   resizeCanvas();
   engine.stop();
-  gameScene.startMultiplayer(client);
+  gameScene.startMultiplayer(client, spawnIndex);
   engine.start('game');
 }
 

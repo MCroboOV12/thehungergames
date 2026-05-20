@@ -19,6 +19,8 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 const games = {};
 let nextPlayerId = 1;
+let nextSpawnIndex = 0;
+const MAX_PLAYERS = 8;
 
 setInterval(() => {
   wss.clients.forEach(ws => {
@@ -54,7 +56,8 @@ wss.on('connection', (ws) => {
         games[code] = game;
         currentGame = game;
         const id = nextPlayerId++;
-        currentPlayer = { id, name: 'Admin', ws };
+        const spawnIndex = nextSpawnIndex++;
+        currentPlayer = { id, name: 'Admin', ws, spawnIndex };
         game.players.push(currentPlayer);
         ws.send(JSON.stringify({ type: 'game_created', code, playerId: id }));
         break;
@@ -69,8 +72,13 @@ wss.on('connection', (ws) => {
           ws.send(JSON.stringify({ type: 'join_failed', reason: 'started' }));
           return;
         }
+        if (game.players.length >= MAX_PLAYERS) {
+          ws.send(JSON.stringify({ type: 'join_failed', reason: 'full' }));
+          return;
+        }
         const id = nextPlayerId++;
-        currentPlayer = { id, name: msg.playerName || `Player ${id}`, ws };
+        const spawnIndex = nextSpawnIndex++;
+        currentPlayer = { id, name: msg.playerName || `Player ${id}`, ws, spawnIndex };
         game.players.push(currentPlayer);
         currentGame = game;
         ws.send(JSON.stringify({ type: 'joined', playerId: id, gameName: game.name }));
@@ -83,7 +91,9 @@ wss.on('connection', (ws) => {
       case 'start_game': {
         if (!currentGame || currentGame.admin !== ws) return;
         currentGame.started = true;
-        broadcast(currentGame, { type: 'game_started' });
+        const spawns = {};
+        for (const p of currentGame.players) spawns[p.id] = p.spawnIndex;
+        broadcast(currentGame, { type: 'game_started', spawns });
         break;
       }
       case 'player_update': {
