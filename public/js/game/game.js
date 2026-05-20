@@ -1002,15 +1002,13 @@ const gameScene = new (class extends Scene {
   }
 
   _renderStormOverlay(ctx) {
-    const ox = this.camera.x;
-    const oy = this.camera.y;
-    const cw = canvas.width;
-    const ch = canvas.height;
+    const sx = ARENA_CX - this.camera.x;
+    const sy = ARENA_CY - this.camera.y;
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(ox, oy, cw, ch);
-    ctx.arc(ARENA_CX, ARENA_CY, this.stormRadius, 0, Math.PI * 2, true);
+    ctx.rect(0, 0, canvas.width, canvas.height);
+    ctx.arc(sx, sy, this.stormRadius, 0, Math.PI * 2, true);
     ctx.fillStyle = 'rgba(200,50,0,0.25)';
     ctx.fill();
 
@@ -1018,7 +1016,7 @@ const gameScene = new (class extends Scene {
     ctx.strokeStyle = `rgba(255,100,0,${0.3 + borderIntensity * 0.7})`;
     ctx.lineWidth = 6 + borderIntensity * 8;
     ctx.beginPath();
-    ctx.arc(ARENA_CX, ARENA_CY, this.stormRadius, 0, Math.PI * 2);
+    ctx.arc(sx, sy, this.stormRadius, 0, Math.PI * 2);
     ctx.stroke();
 
     ctx.restore();
