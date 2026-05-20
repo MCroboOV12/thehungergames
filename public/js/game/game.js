@@ -245,6 +245,7 @@ const gameScene = new (class extends Scene {
     this.supplyDropTimer = 25 + Math.random() * 20;
     this.gameEnded = false;
     this.victory = false;
+    this.victoryTriggered = false;
 
     this._buildBackgroundCache();
   }
@@ -459,9 +460,17 @@ const gameScene = new (class extends Scene {
       }
     }
 
-    const aliveBots = this.bots.filter(b => b.alive).length;
-    if (this.playerAlive && aliveBots === 0 && !this.gameEnded) {
-      this._endGame(true);
+    if (this.playerAlive && !this.gameEnded) {
+      const aliveBots = this.bots.filter(b => b.alive).length;
+      if (aliveBots === 0) {
+        if (!this.victoryTriggered) {
+          this.victoryTriggered = true;
+          this.victoryTime = this.time;
+        }
+        if (this.time - this.victoryTime > 1) {
+          this._endGame(true);
+        }
+      }
     }
 
     this._updateSupplyDrops(dt);
