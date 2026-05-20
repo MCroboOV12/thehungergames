@@ -241,8 +241,9 @@ const gameScene = new (class extends Scene {
   update(dt) {
     this.time += dt;
     this.player.update(dt, input);
-    this.bot.update(dt);
+    this.bot.update(dt, this.player, this.items, this.projectiles, this.rocks);
     this._constrainPlayer();
+    this._constrainBot();
     this.camera.follow(this.player, canvas.width, canvas.height);
     this.inventory.update(input);
     this._checkPickup(input);
@@ -287,14 +288,26 @@ const gameScene = new (class extends Scene {
         continue;
       }
 
-      const bx = this.bot.x + this.bot.width / 2;
-      const by = this.bot.y + this.bot.height / 2;
-      const pdx = bx - p.x;
-      const pdy = by - p.y;
-      if (pdx * pdx + pdy * pdy < 20 * 20) {
-        this.bot.takeDamage(p.damage);
-        this.projectiles.splice(i, 1);
-        continue;
+      if (p.owner === 'player') {
+        const bx = this.bot.x + this.bot.width / 2;
+        const by = this.bot.y + this.bot.height / 2;
+        const pdx = bx - p.x;
+        const pdy = by - p.y;
+        if (pdx * pdx + pdy * pdy < 20 * 20) {
+          this.bot.takeDamage(p.damage);
+          this.projectiles.splice(i, 1);
+          continue;
+        }
+      } else if (p.owner === 'bot') {
+        const px = this.player.x + this.player.width / 2;
+        const py = this.player.y + this.player.height / 2;
+        const pdx = px - p.x;
+        const pdy = py - p.y;
+        if (pdx * pdx + pdy * pdy < 20 * 20) {
+          this.player.hp = Math.max(0, this.player.hp - p.damage);
+          this.projectiles.splice(i, 1);
+          continue;
+        }
       }
 
       if (p.dist >= p.maxRange) {
@@ -361,7 +374,7 @@ const gameScene = new (class extends Scene {
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         dist: 0, maxRange: 250,
-        damage: 50, icon: 'Knife', color: '#ef5350',
+        damage: 50, icon: 'Knife', color: '#ef5350', owner: 'player',
       });
       return;
     }
@@ -441,8 +454,23 @@ const gameScene = new (class extends Scene {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       dist: 0, maxRange,
-      damage, icon: 'Arrow', color: '#8bc34a',
+      damage, icon: 'Arrow', color: '#8bc34a', owner: 'player',
     });
+  }
+
+  _constrainBot() {
+    const b = this.bot;
+    const cx = b.x + b.width / 2;
+    const cy = b.y + b.height / 2;
+    const dx = cx - ARENA_CX;
+    const dy = cy - ARENA_CY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const maxDist = ARENA_RADIUS - Math.max(b.width, b.height) / 2;
+    if (dist > maxDist) {
+      const ratio = maxDist / dist;
+      b.x = ARENA_CX + dx * ratio - b.width / 2;
+      b.y = ARENA_CY + dy * ratio - b.height / 2;
+    }
   }
 
   _constrainPlayer() {

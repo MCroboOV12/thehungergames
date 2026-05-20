@@ -5,6 +5,16 @@ class Bot extends Entity {
     this.hp = 100;
     this.maxHp = 100;
     this.hurtTimer = 0;
+    this.speed = 120;
+    this.detectionRange = 250;
+    this.attackRange = 60;
+    this.state = 'wander';
+    this.stateTimer = 0;
+    this.wanderTarget = null;
+    this.attackCooldown = 0;
+    this.inventory = [null, null, null];
+    this.selectedSlot = 0;
+    this.retreatThreshold = 0.3;
   }
 
   takeDamage(amount) {
@@ -12,21 +22,238 @@ class Bot extends Entity {
     this.hurtTimer = 0.15;
   }
 
-  update(dt) {
+  update(dt, player, items, projectiles, rocks) {
     if (this.hurtTimer > 0) this.hurtTimer -= dt;
+    if (this.attackCooldown > 0) this.attackCooldown -= dt;
+
+    const bx = this.x + this.width / 2;
+    const by = this.y + this.height / 2;
+    const px = player.x + player.width / 2;
+    const py = player.y + player.height / 2;
+    const dist = Math.sqrt((px - bx) ** 2 + (py - by) ** 2);
+
+    this._decide(dt, player, items, projectiles, dist, bx, by, px, py);
+    super.update(dt);
+  }
+
+  _decide(dt, player, items, projectiles, dist, bx, by, px, py) {
+    if (this.hp / this.maxHp < this.retreatThreshold) {
+      this.state = 'retreat';
+    } else if (dist < this.detectionRange) {
+      if (dist < this.attackRange && this._hasWeapon()) {
+        this.state = 'attack';
+      } else if (dist < this.detectionRange) {
+        this.state = 'chase';
+      }
+    } else {
+      const nearbyItem = this._findNearestItem(items, bx, by);
+      if (nearbyItem && this._hasEmptySlot()) {
+        this.state = 'pickup';
+        this.pickupTarget = nearbyItem;
+      } else {
+        this.state = 'wander';
+      }
+    }
+
+    this._executeState(dt, player, items, projectiles, dist, bx, by, px, py);
+  }
+
+  _executeState(dt, player, items, projectiles, dist, bx, by, px, py) {
+    switch (this.state) {
+      case 'wander':
+        this._doWander(dt);
+        break;
+      case 'chase':
+        this._doChase(px, py, player);
+        break;
+      case 'attack':
+        this._doAttack(player, projectiles, dist, px, py, bx, by);
+        break;
+      case 'retreat':
+        this._doRetreat(px, py);
+        break;
+      case 'pickup':
+        this._doPickup(items, bx, by);
+        break;
+    }
+  }
+
+  _doWander(dt) {
+    this.stateTimer -= dt;
+    if (this.stateTimer <= 0 || !this.wanderTarget) {
+      this.wanderTarget = {
+        x: ARENA_CX + (Math.random() - 0.5) * 200,
+        y: ARENA_CY + (Math.random() - 0.5) * 200,
+      };
+      this.stateTimer = 2 + Math.random() * 3;
+    }
+    this._moveToward(this.wanderTarget.x, this.wanderTarget.y);
+  }
+
+  _doChase(px, py, player) {
+    if (this._hasRangedWeapon() && Math.random() < 0.02) {
+      this.state = 'attack';
+    }
+    this._moveToward(px, py);
+  }
+
+  _doAttack(player, projectiles, dist, px, py, bx, by) {
+    if (this.attackCooldown > 0) return;
+    const item = this.inventory[this.selectedSlot];
+    if (!item) {
+      this.state = 'chase';
+      return;
+    }
+
+    if (item.name === 'Heal' && this.hp < this.maxHp) {
+      this.hp = this.maxHp;
+      this.inventory[this.selectedSlot] = null;
+      this.attackCooldown = 0.5;
+      return;
+    }
+
+    if (item.name === 'Sword' || item.name === 'Axe') {
+      if (dist > this.attackRange) { this.state = 'chase'; return; }
+      const dmg = item.name === 'Sword' ? 30 : 50;
+      this.attackCooldown = item.name === 'Sword' ? 0.4 : 0.7;
+      player.hp = Math.max(0, player.hp - dmg);
+      this._targetSlot = this.selectedSlot;
+    }
+
+    if (item.name === 'Knife') {
+      if (dist > this.attackRange) {
+        this._shootProjectile(projectiles, px, py, bx, by, 'Knife', 400, 250, 50);
+        this.inventory[this.selectedSlot] = null;
+        this.attackCooldown = 0.5;
+      } else {
+        this.attackCooldown = 0.3;
+        player.hp = Math.max(0, player.hp - 15);
+      }
+    }
+
+    if (item.name === 'Bow') {
+      const charge = 0.5 + Math.random() * 1.5;
+      const t = charge / 2;
+      const speed = 300 + t * 300;
+      const range = 200 + t * 300;
+      const dmg = Math.round(10 + t * 50);
+      this._shootProjectile(projectiles, px, py, bx, by, 'Arrow', speed, range, dmg);
+      this.attackCooldown = 1 + Math.random();
+    }
+
+    this._equipBest();
+  }
+
+  _shootProjectile(projectiles, px, py, bx, by, icon, speed, maxRange, damage) {
+    const angle = Math.atan2(py - by, px - bx);
+    projectiles.push({
+      x: bx, y: by,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      dist: 0, maxRange,
+      damage, icon, color: icon === 'Arrow' ? '#8bc34a' : '#ef5350', owner: 'bot',
+    });
+  }
+
+  _doRetreat(px, py) {
+    this._moveToward(this.x - (px - this.x), this.y - (py - this.y));
+
+    const healSlot = this.inventory.findIndex(i => i && i.name === 'Heal');
+    if (healSlot !== -1) {
+      this.hp = this.maxHp;
+      this.inventory[healSlot] = null;
+    }
+
+    if (this.hp / this.maxHp > 0.5) {
+      this.state = 'wander';
+    }
+  }
+
+  _doPickup(items, bx, by) {
+    if (!this.pickupTarget || this.pickupTarget.collected) {
+      this.state = 'wander';
+      return;
+    }
+    const dx = this.pickupTarget.x - bx;
+    const dy = this.pickupTarget.y - by;
+    if (dx * dx + dy * dy < 25 * 25) {
+      const empty = this.inventory.findIndex(i => i === null);
+      if (empty !== -1) {
+        this.inventory[empty] = { name: this.pickupTarget.name, color: this.pickupTarget.color };
+        this.pickupTarget.collected = true;
+        this._equipBest();
+      }
+      this.state = 'wander';
+    } else {
+      this._moveToward(this.pickupTarget.x, this.pickupTarget.y);
+    }
+  }
+
+  _moveToward(tx, ty) {
+    const bx = this.x + this.width / 2;
+    const by = this.y + this.height / 2;
+    const dx = tx - bx;
+    const dy = ty - by;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < 5) { this.vx = 0; this.vy = 0; return; }
+    this.vx = (dx / dist) * this.speed;
+    this.vy = (dy / dist) * this.speed;
+  }
+
+  _findNearestItem(items, bx, by) {
+    let best = null;
+    let bestDist = Infinity;
+    for (const item of items) {
+      if (item.collected) continue;
+      const dx = item.x - bx;
+      const dy = item.y - by;
+      const d = dx * dx + dy * dy;
+      if (d < bestDist) {
+        bestDist = d;
+        best = item;
+      }
+    }
+    return best;
+  }
+
+  _hasWeapon() {
+    return this.inventory.some(i => i && ['Sword', 'Axe', 'Knife', 'Bow'].includes(i.name));
+  }
+
+  _hasRangedWeapon() {
+    return this.inventory.some(i => i && ['Bow', 'Knife'].includes(i.name));
+  }
+
+  _hasEmptySlot() {
+    return this.inventory.includes(null);
+  }
+
+  _equipBest() {
+    const order = ['Sword', 'Axe', 'Knife', 'Bow', 'Heal'];
+    for (const name of order) {
+      const idx = this.inventory.findIndex(i => i && i.name === name);
+      if (idx !== -1) {
+        this.selectedSlot = idx;
+        return;
+      }
+    }
+    this.selectedSlot = 0;
   }
 
   render(ctx) {
     const cx = this.x + this.width / 2;
     const cy = this.y + this.height / 2;
 
+    const heldItem = this.inventory[this.selectedSlot];
+    if (heldItem) {
+      drawItemIcon(ctx, cx + 20, cy - 10, 18, heldItem.name, heldItem.color);
+    }
+
     const armLen = 22;
     const armAngle = 0.3;
 
     const lArmEndX = cx - 16 - Math.cos(armAngle) * armLen;
     const lArmEndY = cy - 4 + Math.sin(armAngle) * armLen;
-    const rArmEndX = cx + 16 + Math.cos(armAngle) * armLen;
-    const rArmEndY = cy - 4 + Math.sin(armAngle) * armLen;
 
     ctx.strokeStyle = '#6d4c41';
     ctx.lineWidth = 6;
@@ -35,6 +262,9 @@ class Bot extends Entity {
     ctx.moveTo(cx - 16, cy - 4);
     ctx.lineTo(lArmEndX, lArmEndY);
     ctx.stroke();
+
+    const rArmEndX = cx + 16 + Math.cos(armAngle) * armLen;
+    const rArmEndY = cy - 4 + Math.sin(armAngle) * armLen;
     ctx.beginPath();
     ctx.moveTo(cx + 16, cy - 4);
     ctx.lineTo(rArmEndX, rArmEndY);
