@@ -1032,7 +1032,6 @@ function startGame() {
     if (el) el.style.display = 'none';
   });
   document.getElementById('endgame-overlay').classList.remove('active');
-  document.getElementById('cutscene-overlay').classList.remove('active');
   canvas.style.display = 'block';
   resizeCanvas();
   engine.start('game');

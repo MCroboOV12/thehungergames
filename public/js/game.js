@@ -18,9 +18,6 @@ const translations = {
     summaryPlaceholder: 'Zusammenfassung wird hier erscheinen...',
     endgameAnother: 'Noch eine Runde',
     endgameHome: 'Hauptmen\u00fc',
-    endgameCutscene: 'Eine Szene lesen',
-    cutscenePlaceholder: 'Szene wird hier erscheinen...',
-    cutsceneBack: 'Zur\u00fcck',
   },
   en: {
     subtitle: 'Welcome to the Hunger Games',
@@ -41,9 +38,6 @@ const translations = {
     summaryPlaceholder: 'Summary will appear here...',
     endgameAnother: 'Another Round',
     endgameHome: 'Main Menu',
-    endgameCutscene: 'Read a Scene',
-    cutscenePlaceholder: 'Scene will appear here...',
-    cutsceneBack: 'Back',
   },
   fr: {
     subtitle: 'Bienvenue aux Hunger Games',
@@ -64,9 +58,6 @@ const translations = {
     summaryPlaceholder: 'Le résumé apparaîtra ici...',
     endgameAnother: 'Encore une manche',
     endgameHome: 'Menu principal',
-    endgameCutscene: 'Lire une sc\u00e8ne',
-    cutscenePlaceholder: 'La sc\u00e8ne appara\u00eetra ici...',
-    cutsceneBack: 'Retour',
   },
   es: {
     subtitle: 'Bienvenido a los Juegos del Hambre',
@@ -87,9 +78,6 @@ const translations = {
     summaryPlaceholder: 'El resumen aparecer\u00e1 aqu\u00ed...',
     endgameAnother: 'Otra ronda',
     endgameHome: 'Men\u00fa principal',
-    endgameCutscene: 'Leer una escena',
-    cutscenePlaceholder: 'La escena aparecer\u00e1 aqu\u00ed...',
-    cutsceneBack: 'Volver',
   },
 };
 
@@ -123,10 +111,7 @@ const endgameOverlay = document.getElementById('endgame-overlay');
 const endgameTitle = document.getElementById('endgame-title');
 const btnEndgameAnother = document.getElementById('endgame-another');
 const btnEndgameHome = document.getElementById('endgame-home');
-const btnEndgameCutscene = document.getElementById('endgame-cutscene');
-const cutsceneOverlay = document.getElementById('cutscene-overlay');
-const cutsceneText = document.getElementById('cutscene-text');
-const btnBackCutscene = document.getElementById('btn-back-cutscene');
+
 
 let currentQuiz = null;
 
@@ -147,8 +132,6 @@ function applyLanguage(lang) {
   btnBackSummary.textContent = t.btnBackFavspot;
   btnEndgameAnother.textContent = t.endgameAnother;
   btnEndgameHome.textContent = t.endgameHome;
-  btnEndgameCutscene.textContent = t.endgameCutscene;
-  btnBackCutscene.textContent = t.cutsceneBack;
 }
 
 function applyQuizLanguage(lang) {
@@ -198,14 +181,6 @@ function setLanguage(lang) {
       .then(text => { summaryText.innerHTML = text; })
       .catch(() => { summaryText.innerHTML = t.summaryPlaceholder; });
   }
-  if (cutsceneOverlay.classList.contains('active')) {
-    const t = translations[lang];
-    cutsceneText.innerHTML = t.cutscenePlaceholder;
-    fetch(cutsceneFile(lang))
-      .then(r => r.text())
-      .then(text => { cutsceneText.innerHTML = text; })
-      .catch(() => { cutsceneText.innerHTML = t.cutscenePlaceholder; });
-  }
 }
 
 langSelect.addEventListener('change', () => setLanguage(langSelect.value));
@@ -217,7 +192,6 @@ function showWelcome() {
   favspotScreen.classList.remove('active');
   summaryScreen.classList.remove('active');
   endgameOverlay.classList.remove('active');
-  cutsceneOverlay.classList.remove('active');
   langTop.classList.remove('visible');
   currentQuiz = null;
 }
@@ -369,31 +343,6 @@ btnEndgameHome.addEventListener('click', () => {
   stopGame();
   showWelcome();
 });
-btnEndgameCutscene.addEventListener('click', () => {
-  endgameOverlay.classList.remove('active');
-  showCutscene();
-});
-btnBackCutscene.addEventListener('click', () => {
-  cutsceneOverlay.classList.remove('active');
-  endgameOverlay.classList.add('active');
-});
-
-function cutsceneFile(lang) {
-  const map = { de: 'page_de.txt', en: 'page_en.txt', fr: 'page_fr.txt', es: 'page_es.txt' };
-  return '/assets/' + (map[lang] || 'page_de.txt');
-}
-
-function showCutscene() {
-  const lang = langSelect.value;
-  const t = translations[lang];
-  cutsceneText.innerHTML = t.cutscenePlaceholder;
-  cutsceneOverlay.classList.add('active');
-  fetch(cutsceneFile(lang))
-    .then(r => r.text())
-    .then(text => { cutsceneText.innerHTML = text; })
-    .catch(() => { cutsceneText.innerHTML = t.cutscenePlaceholder; });
-}
-
 const browserLang = (navigator.language || 'en').slice(0, 2);
 const supported = ['de', 'en', 'fr', 'es'];
 if (supported.includes(browserLang)) {
