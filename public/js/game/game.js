@@ -149,12 +149,33 @@ function drawItemIcon(ctx, x, y, s, name, color) {
 }
 
 const gameScene = new (class extends Scene {
+  startMultiplayer(client) {
+    this.multiplayerMode = true;
+    this.multiplayerClient = client;
+    this.remotePlayers = {};
+    client.on('player_update', (msg) => {
+      if (msg.id === client.playerId) return;
+      this.remotePlayers[msg.id] = msg;
+    });
+    client.on('take_damage', (msg) => {
+      this.player.hp = Math.max(0, this.player.hp - msg.amount);
+      this.hurtTimer = 0.15;
+    });
+    client.on('player_left', (msg) => {
+      delete this.remotePlayers[msg.playerId];
+    });
+  }
+
   enter() {
     this.phase = 'countdown';
     this.time = 0;
     this.countdownTimer = COUNTDOWN_DURATION;
     this.stormRadius = ARENA_RADIUS;
     this.camera = new Camera(canvas.width, canvas.height);
+    this.remotePlayers = this.remotePlayers || {};
+    this._lastPlayerUpdate = 0;
+    this.hurtTimer = 0;
+    this.multiplayerMode = !!this.multiplayerMode;
 
     const pPos = randomPedestalPos(0, BOT_COUNT + 1);
     this.player = new Player(pPos.x, pPos.y);
@@ -162,10 +183,12 @@ const gameScene = new (class extends Scene {
     this.camera.y = ARENA_CY - canvas.height / 2;
 
     this.bots = [];
-    for (let i = 0; i < BOT_COUNT; i++) {
-      const pos = randomPedestalPos(i + 1, BOT_COUNT + 1);
-      const bot = new Bot(pos.x, pos.y, i);
-      this.bots.push(bot);
+    if (!this.multiplayerMode) {
+      for (let i = 0; i < BOT_COUNT; i++) {
+        const pos = randomPedestalPos(i + 1, BOT_COUNT + 1);
+        const bot = new Bot(pos.x, pos.y, i);
+        this.bots.push(bot);
+      }
     }
 
     this.grassTufts = [];
@@ -246,6 +269,8 @@ const gameScene = new (class extends Scene {
     this.gameEnded = false;
     this.victory = false;
     this.victoryTriggered = false;
+    this._prevAttackAnim = false;
+    this.playerHurtTimer = 0;
 
     this._buildBackgroundCache();
   }
@@ -298,6 +323,25 @@ const gameScene = new (class extends Scene {
       this._updatePlaying(dt);
     }
 
+    if (this.multiplayerMode && this.multiplayerClient && this.phase === 'playing') {
+      this._lastPlayerUpdate += dt;
+      if (this._lastPlayerUpdate > 0.05) {
+        this._lastPlayerUpdate = 0;
+        const hand = this.playerAlive ? this.player.getRightHandPos() : null;
+        this.multiplayerClient.send({
+          type: 'player_update',
+          x: this.player.x,
+          y: this.player.y,
+          hp: this.player.hp,
+          maxHp: this.player.maxHp,
+          alive: this.playerAlive,
+          selectedItem: this.playerAlive && this.inventory.slots[this.inventory.selected]?.name || null,
+          attackAnim: this._prevAttackAnim || false,
+        });
+      }
+      this._prevAttackAnim = false;
+    }
+
     if (this.killFeed.length > 0) {
       this.killFeedTimer += dt;
       if (this.killFeedTimer > 5) {
@@ -305,6 +349,8 @@ const gameScene = new (class extends Scene {
         this.killFeedTimer = 0;
       }
     }
+
+    if (this.hurtTimer > 0) this.hurtTimer -= dt;
 
     input.clearFrame();
   }
@@ -394,6 +440,19 @@ const gameScene = new (class extends Scene {
             break;
           }
         }
+        if (this.projectiles[i] && this.multiplayerMode) {
+          for (const id in this.remotePlayers) {
+            const rp = this.remotePlayers[id];
+            if (!rp.alive) continue;
+            const rdx = rp.x + 16 - p.x;
+            const rdy = rp.y + 24 - p.y;
+            if (rdx * rdx + rdy * rdy < 20 * 20) {
+              this.multiplayerClient.send({ type: 'apply_damage', targetId: Number(id), amount: p.damage });
+              this.projectiles.splice(i, 1);
+              break;
+            }
+          }
+        }
         continue;
       } else if (p.owner === 'bot') {
         const px = this.player.x + this.player.width / 2;
@@ -428,11 +487,21 @@ const gameScene = new (class extends Scene {
     if (this.player.hp <= 0 && this.playerAlive) {
       this.playerAlive = false;
       this.playerDeathTime = this.time;
-      const aliveBots = this.bots.filter(b => b.alive).length;
-      if (aliveBots === 0) {
-        this._endGame(true);
+      if (this.multiplayerMode) {
+        let remoteAlive = 0;
+        for (const id in this.remotePlayers) if (this.remotePlayers[id].alive) remoteAlive++;
+        if (remoteAlive === 0) {
+          this._endGame(true);
+        } else {
+          this._addKillFeed('You were eliminated');
+        }
       } else {
-        this._addKillFeed('You were eliminated');
+        const aliveBots = this.bots.filter(b => b.alive).length;
+        if (aliveBots === 0) {
+          this._endGame(true);
+        } else {
+          this._addKillFeed('You were eliminated');
+        }
       }
     }
 
@@ -461,8 +530,17 @@ const gameScene = new (class extends Scene {
     }
 
     if (this.playerAlive && !this.gameEnded) {
-      const aliveBots = this.bots.filter(b => b.alive).length;
-      if (aliveBots === 0) {
+      let aliveCount;
+      if (this.multiplayerMode) {
+        let remoteAlive = 0;
+        for (const id in this.remotePlayers) {
+          if (this.remotePlayers[id].alive) remoteAlive++;
+        }
+        aliveCount = remoteAlive;
+      } else {
+        aliveCount = this.bots.filter(b => b.alive).length;
+      }
+      if (aliveCount === 0) {
         if (!this.victoryTriggered) {
           this.victoryTriggered = true;
           this.victoryTime = this.time;
@@ -487,6 +565,17 @@ const gameScene = new (class extends Scene {
     this.victory = victory;
     this.player.vx = 0;
     this.player.vy = 0;
+    if (this.multiplayerClient) {
+      this.multiplayerClient.send({
+        type: 'player_update',
+        x: this.player.x,
+        y: this.player.y,
+        hp: 0,
+        maxHp: this.player.maxHp,
+        alive: false,
+        selectedItem: null,
+      });
+    }
     engine.stop();
     document.getElementById('endgame-overlay').classList.add('active');
     const title = document.getElementById('endgame-title');
@@ -665,7 +754,30 @@ const gameScene = new (class extends Scene {
 
       bot.takeDamage(damage, 'player');
       this.slashEffect = { x: bx, y: by, timer: 0.2, angle };
+      this._prevAttackAnim = true;
       return;
+    }
+
+    if (this.multiplayerMode) {
+      for (const id in this.remotePlayers) {
+        const rp = this.remotePlayers[id];
+        if (!rp.alive) continue;
+        const rx = rp.x + 16;
+        const ry = rp.y + 24;
+        const rdx = rx - px;
+        const rdy = ry - py;
+        const rdist = Math.sqrt(rdx * rdx + rdy * rdy);
+        if (rdist > range) continue;
+        const rang = Math.atan2(rdy, rdx);
+        let diff = rang - angle;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        if (Math.abs(diff) > cone) continue;
+        this.multiplayerClient.send({ type: 'apply_damage', targetId: Number(id), amount: damage });
+        this.slashEffect = { x: rx, y: ry, timer: 0.2, angle };
+        this._prevAttackAnim = true;
+        return;
+      }
     }
   }
 
@@ -868,6 +980,47 @@ const gameScene = new (class extends Scene {
       this._renderPedestals(ctx);
     }
 
+    if (this.multiplayerMode) {
+      const colors = BOT_COLORS;
+      let colorIdx = 0;
+      for (const id in this.remotePlayers) {
+        const rp = this.remotePlayers[id];
+        if (!rp.alive) continue;
+        const c = colors[colorIdx % colors.length];
+        colorIdx++;
+        const cx = rp.x + 16;
+        const cy = rp.y + 24;
+
+        ctx.fillStyle = c;
+        ctx.fillRect(rp.x, rp.y, 32, 48);
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.arc(cx - 10, rp.y + 14, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + 10, rp.y + 14, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#222';
+        ctx.beginPath();
+        ctx.arc(cx - 9, rp.y + 15, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + 11, rp.y + 15, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(rp.name || `Player`, cx, rp.y - 4);
+
+        if (rp.selectedItem) {
+          drawItemIcon(ctx, cx + 20, cy - 10, 18, rp.selectedItem, '#ccc');
+        }
+      }
+    }
+
     for (const bot of this.bots) {
       bot.render(ctx);
     }
@@ -908,7 +1061,14 @@ const gameScene = new (class extends Scene {
     ctx.font = '14px sans-serif';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'top';
-    const aliveCount = this.bots.filter(b => b.alive).length + (this.playerAlive ? 1 : 0);
+    let aliveCount;
+    if (this.multiplayerMode) {
+      let remoteAlive = 0;
+      for (const id in this.remotePlayers) if (this.remotePlayers[id].alive) remoteAlive++;
+      aliveCount = remoteAlive + (this.playerAlive ? 1 : 0);
+    } else {
+      aliveCount = this.bots.filter(b => b.alive).length + (this.playerAlive ? 1 : 0);
+    }
     ctx.fillText(`HP: ${Math.ceil(this.player.hp)}/${this.player.maxHp} | Alive: ${aliveCount}`, 12, 12);
 
     if (this.phase === 'countdown') {
@@ -949,6 +1109,11 @@ const gameScene = new (class extends Scene {
         ctx.font = 'bold 13px sans-serif';
         ctx.fillText(this.killFeed[i], canvas.width - 12, 12 + i * 20);
       }
+    }
+
+    if (this.hurtTimer > 0) {
+      ctx.fillStyle = `rgba(255,0,0,${this.hurtTimer * 2})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
   }
 

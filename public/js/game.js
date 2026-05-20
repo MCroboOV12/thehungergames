@@ -22,12 +22,21 @@ const translations = {
     namePromptTitle: 'Gib deinen Namen ein',
     nameSubmit: 'Beitreten',
     nameBack: 'Zur\u00fcck',
-    adminTitle: 'Admin-Bereich',
-    adminInfo: 'Hier kommen benutzerdefinierte Spieleinstellungen hin.',
-    adminBack: 'Zur\u00fcck',
-    gameSelectTitle: 'W\u00e4hle ein Spiel',
-    gameSelectEmpty: 'Keine Spiele verf\u00fcgbar.',
+    adminFormTitle: 'Spiel erstellen',
+    adminCreate: 'Erstellen',
+    adminBackForm: 'Zur\u00fcck',
+    adminPlaceholderName: 'Spielname...',
+    adminPlaceholderCode: 'Code...',
+    adminLobbyTitle: 'Spiel-Lobby',
+    adminStart: 'Spiel starten',
+    adminBackLobby: 'Abbrechen',
+    gameSelectTitle: 'Spiel beitreten',
+    gameJoin: 'Beitreten',
     gameSelectBack: 'Zur\u00fcck',
+    gamePlaceholderCode: 'Code...',
+    gameLobbyTitle: 'Beigetretenes Spiel',
+    gameWaiting: 'Warten auf Admin...',
+    gameLeave: 'Verlassen',
   },
   en: {
     subtitle: 'Welcome to the Hunger Games',
@@ -52,12 +61,21 @@ const translations = {
     namePromptTitle: 'Enter your name',
     nameSubmit: 'Join',
     nameBack: 'Back',
-    adminTitle: 'Admin Panel',
-    adminInfo: 'Custom game settings will go here.',
-    adminBack: 'Back',
-    gameSelectTitle: 'Select a Game',
-    gameSelectEmpty: 'No games available.',
+    adminFormTitle: 'Create Game',
+    adminCreate: 'Create',
+    adminBackForm: 'Back',
+    adminPlaceholderName: 'Game name...',
+    adminPlaceholderCode: 'Code...',
+    adminLobbyTitle: 'Game Lobby',
+    adminStart: 'Start Game',
+    adminBackLobby: 'Cancel',
+    gameSelectTitle: 'Join Game',
+    gameJoin: 'Join',
     gameSelectBack: 'Back',
+    gamePlaceholderCode: 'Code...',
+    gameLobbyTitle: 'Joined Game',
+    gameWaiting: 'Waiting for admin to start...',
+    gameLeave: 'Leave',
   },
   fr: {
     subtitle: 'Bienvenue aux Hunger Games',
@@ -65,7 +83,6 @@ const translations = {
     btnQuiz: 'Commencer le quiz',
     btnFavspot: 'Endroit favori',
     btnSummary: 'Résumé',
-    btnGame: 'Jeu',
     btnBackFavspot: 'Retour au menu',
     next: 'Suivant',
     resultTitle: 'R\u00e9sultat',
@@ -82,12 +99,21 @@ const translations = {
     namePromptTitle: 'Entrez votre nom',
     nameSubmit: 'Rejoindre',
     nameBack: 'Retour',
-    adminTitle: 'Panneau d\'administration',
-    adminInfo: 'Les paramètres du jeu personnalisé apparaîtront ici.',
-    adminBack: 'Retour',
-    gameSelectTitle: 'Choisir un jeu',
-    gameSelectEmpty: 'Aucun jeu disponible.',
+    adminFormTitle: 'Créer une partie',
+    adminCreate: 'Créer',
+    adminBackForm: 'Retour',
+    adminPlaceholderName: 'Nom de la partie...',
+    adminPlaceholderCode: 'Code...',
+    adminLobbyTitle: 'Lobby de la partie',
+    adminStart: 'Lancer la partie',
+    adminBackLobby: 'Annuler',
+    gameSelectTitle: 'Rejoindre une partie',
+    gameJoin: 'Rejoindre',
     gameSelectBack: 'Retour',
+    gamePlaceholderCode: 'Code...',
+    gameLobbyTitle: 'Partie rejointe',
+    gameWaiting: 'En attente de l\'admin...',
+    gameLeave: 'Quitter',
   },
   es: {
     subtitle: 'Bienvenido a los Juegos del Hambre',
@@ -112,12 +138,21 @@ const translations = {
     namePromptTitle: 'Introduce tu nombre',
     nameSubmit: 'Unirse',
     nameBack: 'Volver',
-    adminTitle: 'Panel de administraci\u00f3n',
-    adminInfo: 'La configuraci\u00f3n del juego personalizado aparecer\u00e1 aqu\u00ed.',
-    adminBack: 'Volver',
-    gameSelectTitle: 'Seleccionar un juego',
-    gameSelectEmpty: 'No hay juegos disponibles.',
+    adminFormTitle: 'Crear partida',
+    adminCreate: 'Crear',
+    adminBackForm: 'Volver',
+    adminPlaceholderName: 'Nombre de la partida...',
+    adminPlaceholderCode: 'C\u00f3digo...',
+    adminLobbyTitle: 'Lobby de partida',
+    adminStart: 'Iniciar partida',
+    adminBackLobby: 'Cancelar',
+    gameSelectTitle: 'Unirse a partida',
+    gameJoin: 'Unirse',
     gameSelectBack: 'Volver',
+    gamePlaceholderCode: 'C\u00f3digo...',
+    gameLobbyTitle: 'Partida unida',
+    gameWaiting: 'Esperando al admin...',
+    gameLeave: 'Salir',
   },
 };
 
@@ -158,16 +193,35 @@ const namePromptTitle = document.getElementById('name-prompt-title');
 const btnNameSubmit = document.getElementById('name-submit');
 const btnNameBack = document.getElementById('name-back');
 const adminPanel = document.getElementById('admin-panel');
-const adminTitle = document.querySelector('#admin-panel h2');
-const adminInfo = document.getElementById('admin-info');
-const btnAdminBack = document.getElementById('admin-back');
+const adminForm = document.getElementById('admin-form');
+const adminLobby = document.getElementById('admin-lobby');
+const adminFormTitle = document.getElementById('admin-form-title');
+const adminGameName = document.getElementById('admin-game-name');
+const adminCode = document.getElementById('admin-code');
+const btnAdminCreate = document.getElementById('admin-create');
+const btnAdminBackForm = document.getElementById('admin-back-form');
+const adminLobbyTitle = document.getElementById('admin-lobby-title');
+const adminLobbyInfo = document.getElementById('admin-lobby-info');
+const adminPlayerList = document.getElementById('admin-player-list');
+const btnAdminStart = document.getElementById('admin-start');
+const btnAdminBackLobby = document.getElementById('admin-back-lobby');
 const gameSelect = document.getElementById('game-select');
+const gameSelectForm = document.getElementById('game-select-form');
+const gameSelectLobby = document.getElementById('game-select-lobby');
 const gameSelectTitle = document.getElementById('game-select-title');
-const gameListEmpty = document.getElementById('game-select-empty');
+const gameCodeInput = document.getElementById('game-code-input');
+const btnGameJoin = document.getElementById('game-join');
 const btnGameSelectBack = document.getElementById('game-select-back');
+const gameLobbyTitle = document.getElementById('game-lobby-title');
+const gameLobbyInfo = document.getElementById('game-lobby-info');
+const gamePlayerList = document.getElementById('game-player-list');
+const gameWaiting = document.getElementById('game-waiting');
+const btnGameLeave = document.getElementById('game-leave');
 
 
 let currentQuiz = null;
+let gameClient = null;
+let currentMultiplayerSeed = null;
 
 function applyLanguage(lang) {
   const t = translations[lang];
@@ -190,12 +244,21 @@ function applyLanguage(lang) {
   namePromptTitle.textContent = t.namePromptTitle;
   btnNameSubmit.textContent = t.nameSubmit;
   btnNameBack.textContent = t.nameBack;
-  adminTitle.textContent = t.adminTitle;
-  adminInfo.textContent = t.adminInfo;
-  btnAdminBack.textContent = t.adminBack;
-  gameSelectTitle.textContent = t.gameSelectTitle;
-  gameSelectEmpty.textContent = t.gameSelectEmpty;
-  btnGameSelectBack.textContent = t.gameSelectBack;
+  if (adminFormTitle) adminFormTitle.textContent = t.adminFormTitle || 'Create Game';
+  btnAdminCreate.textContent = t.adminCreate || 'Create';
+  btnAdminBackForm.textContent = t.adminBackForm || 'Back';
+  adminGameName.placeholder = t.adminPlaceholderName || 'Game name...';
+  adminCode.placeholder = t.adminPlaceholderCode || 'Code...';
+  adminLobbyTitle.textContent = t.adminLobbyTitle || 'Game Lobby';
+  btnAdminStart.textContent = t.adminStart || 'Start Game';
+  btnAdminBackLobby.textContent = t.adminBackLobby || 'Cancel';
+  gameSelectTitle.textContent = t.gameSelectTitle || 'Join Game';
+  btnGameJoin.textContent = t.gameJoin || 'Join';
+  btnGameSelectBack.textContent = t.gameSelectBack || 'Back';
+  gameCodeInput.placeholder = t.gamePlaceholderCode || 'Code...';
+  gameLobbyTitle.textContent = t.gameLobbyTitle || 'Joined Game';
+  gameWaiting.textContent = t.gameWaiting || 'Waiting for admin to start...';
+  btnGameLeave.textContent = t.gameLeave || 'Leave';
 }
 
 function applyQuizLanguage(lang) {
@@ -251,6 +314,7 @@ langSelect.addEventListener('change', () => setLanguage(langSelect.value));
 langTop.addEventListener('change', () => setLanguage(langTop.value));
 
 function showWelcome() {
+  if (gameClient) { gameClient.disconnect(); gameClient = null; }
   welcome.style.display = 'flex';
   quizScreen.classList.remove('active');
   favspotScreen.classList.remove('active');
@@ -259,6 +323,10 @@ function showWelcome() {
   namePrompt.classList.remove('active');
   adminPanel.classList.remove('active');
   gameSelect.classList.remove('active');
+  adminForm.style.display = 'flex';
+  adminLobby.style.display = 'none';
+  gameSelectForm.style.display = 'flex';
+  gameSelectLobby.style.display = 'none';
   langTop.classList.remove('visible');
   currentQuiz = null;
 }
@@ -411,6 +479,11 @@ btnEndgameHome.addEventListener('click', () => {
   showWelcome();
 });
 
+function getWsUrl() {
+  const loc = window.location;
+  return `ws://${loc.hostname}:${loc.port || 80}`;
+}
+
 btnCustom.addEventListener('click', () => {
   welcome.style.display = 'none';
   namePrompt.classList.add('active');
@@ -424,8 +497,13 @@ btnNameSubmit.addEventListener('click', () => {
   if (!name) return;
   namePrompt.classList.remove('active');
   if (name.toLowerCase() === 'admin') {
+    adminForm.style.display = 'flex';
+    adminLobby.style.display = 'none';
     adminPanel.classList.add('active');
   } else {
+    currentMultiplayerName = name;
+    gameSelectForm.style.display = 'flex';
+    gameSelectLobby.style.display = 'none';
     gameSelect.classList.add('active');
   }
 });
@@ -439,8 +517,106 @@ btnNameBack.addEventListener('click', () => {
   showWelcome();
 });
 
-btnAdminBack.addEventListener('click', () => {
+// --- Admin: Create Game ---
+btnAdminCreate.addEventListener('click', async () => {
+  const gameName = adminGameName.value.trim();
+  const code = adminCode.value.trim();
+  if (!gameName || !code) return;
+  const client = new GameClient();
+  try {
+    await client.connect(getWsUrl());
+    gameClient = client;
+    client.on('game_created', (msg) => {
+      adminForm.style.display = 'none';
+      adminLobby.style.display = 'flex';
+      adminLobbyInfo.textContent = `Game: ${gameName}  |  Code: ${code}`;
+      updateAdminPlayerList([]);
+    });
+    client.on('player_joined', (msg) => {
+      updateAdminPlayerList(msg.players);
+    });
+    client.on('player_left', (msg) => {
+      if (msg.players) updateAdminPlayerList(msg.players);
+    });
+    client.on('error', (msg) => { alert(msg.message); });
+    client.on('close', () => { if (adminPanel.classList.contains('active')) showWelcome(); });
+    client.send({ type: 'create_game', gameName, code });
+  } catch {
+    alert('Connection failed. Is the server running?');
+  }
+});
+
+function updateAdminPlayerList(players) {
+  adminPlayerList.innerHTML = '';
+  adminPlayerList.className = 'player-list';
+  for (const p of players) {
+    const el = document.createElement('p');
+    el.textContent = p.name + (p.id === gameClient?.playerId ? ' (you)' : '');
+    adminPlayerList.appendChild(el);
+  }
+}
+
+btnAdminStart.addEventListener('click', () => {
+  if (!gameClient) return;
+  currentMultiplayerSeed = Date.now();
+  gameClient.send({ type: 'start_game' });
+});
+
+btnAdminBackForm.addEventListener('click', () => {
   adminPanel.classList.remove('active');
+  showWelcome();
+});
+
+btnAdminBackLobby.addEventListener('click', () => {
+  if (gameClient) { gameClient.disconnect(); gameClient = null; }
+  adminPanel.classList.remove('active');
+  showWelcome();
+});
+
+// --- Player: Join Game ---
+btnGameJoin.addEventListener('click', async () => {
+  const code = gameCodeInput.value.trim();
+  if (!code) return;
+  const client = new GameClient();
+  try {
+    await client.connect(getWsUrl());
+    gameClient = client;
+    client.on('joined', (msg) => {
+      gameSelectForm.style.display = 'none';
+      gameSelectLobby.style.display = 'flex';
+      gameLobbyInfo.textContent = `Game: ${msg.gameName}  |  Code: ${code}`;
+      updateGamePlayerList([]);
+    });
+    client.on('player_joined', (msg) => {
+      updateGamePlayerList(msg.players);
+    });
+    client.on('player_left', (msg) => {
+      if (msg.players) updateGamePlayerList(msg.players);
+    });
+    client.on('join_failed', (msg) => {
+      alert(msg.reason === 'not_found' ? 'Game not found.' : 'Game already started.');
+      client.disconnect();
+    });
+    client.on('close', () => { if (gameSelect.classList.contains('active')) showWelcome(); });
+    client.send({ type: 'join_game', code, playerName: currentMultiplayerName || 'Player' });
+  } catch {
+    alert('Connection failed. Is the server running?');
+  }
+});
+
+function updateGamePlayerList(players) {
+  gamePlayerList.innerHTML = '';
+  gamePlayerList.className = 'player-list';
+  for (const p of players) {
+    const el = document.createElement('p');
+    el.textContent = p.name + (p.id === gameClient?.playerId ? ' (you)' : '');
+    gamePlayerList.appendChild(el);
+  }
+}
+
+btnGameLeave.addEventListener('click', () => {
+  if (gameClient) { gameClient.disconnect(); gameClient = null; }
+  gameSelect.classList.remove('active');
   showWelcome();
 });
 
@@ -448,6 +624,49 @@ btnGameSelectBack.addEventListener('click', () => {
   gameSelect.classList.remove('active');
   showWelcome();
 });
+
+gameCodeInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') btnGameJoin.click();
+});
+
+// Listen for game_started on any client
+let currentMultiplayerName = '';
+
+function setupGameStartedListener(client) {
+  client.on('game_started', () => {
+    adminPanel.classList.remove('active');
+    gameSelect.classList.remove('active');
+    adminForm.style.display = 'flex';
+    adminLobby.style.display = 'none';
+    gameSelectForm.style.display = 'flex';
+    gameSelectLobby.style.display = 'none';
+    currentMultiplayerSeed = Date.now();
+    startMultiplayerGame(client);
+  });
+}
+
+// Hook into GameClient constructor to auto-listen for game_started
+const origConnect = GameClient.prototype.connect;
+GameClient.prototype.connect = async function(url) {
+  const result = await origConnect.call(this, url);
+  setupGameStartedListener(this);
+  return result;
+};
+
+
+function startMultiplayerGame(client) {
+  const screens = ['welcome', 'quiz-screen', 'favspot-screen', 'summary-screen'];
+  screens.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+  document.getElementById('endgame-overlay').classList.remove('active');
+  canvas.style.display = 'block';
+  resizeCanvas();
+  engine.stop();
+  gameScene.startMultiplayer(client);
+  engine.start('game');
+}
 
 const browserLang = (navigator.language || 'en').slice(0, 2);
 const supported = ['de', 'en', 'fr', 'es'];

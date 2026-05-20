@@ -46,16 +46,35 @@
       </div>
     </div>
     <div id="admin-panel">
-      <h2>Admin Panel</h2>
-      <p id="admin-info">Custom game settings will go here.</p>
-      <button class="btn btn-secondary" id="admin-back">Back</button>
+      <div id="admin-form">
+        <h2 id="admin-form-title">Create Game</h2>
+        <input type="text" id="admin-game-name" maxlength="30" placeholder="Game name...">
+        <input type="text" id="admin-code" maxlength="6" placeholder="Code...">
+        <button class="btn btn-secondary" id="admin-create">Create</button>
+        <button class="btn btn-secondary" id="admin-back-form">Back</button>
+      </div>
+      <div id="admin-lobby" style="display:none">
+        <h2 id="admin-lobby-title">Game Lobby</h2>
+        <p id="admin-lobby-info"></p>
+        <div id="admin-player-list"></div>
+        <button class="btn btn-secondary" id="admin-start">Start Game</button>
+        <button class="btn btn-secondary" id="admin-back-lobby">Cancel</button>
+      </div>
     </div>
     <div id="game-select">
-      <h2 id="game-select-title">Select a Game</h2>
-      <div id="game-list">
-        <p id="game-select-empty">No games available.</p>
+      <div id="game-select-form">
+        <h2 id="game-select-title">Join Game</h2>
+        <input type="text" id="game-code-input" maxlength="6" placeholder="Code...">
+        <button class="btn btn-secondary" id="game-join">Join</button>
+        <button class="btn btn-secondary" id="game-select-back">Back</button>
       </div>
-      <button class="btn btn-secondary" id="game-select-back">Back</button>
+      <div id="game-select-lobby" style="display:none">
+        <h2 id="game-lobby-title">Joined Game</h2>
+        <p id="game-lobby-info"></p>
+        <div id="game-player-list"></div>
+        <p id="game-waiting">Waiting for admin to start...</p>
+        <button class="btn btn-secondary" id="game-leave">Leave</button>
+      </div>
     </div>
     <div id="quiz-screen">
       <span class="quiz-progress" id="quiz-progress"></span>
@@ -99,6 +118,7 @@
     <option value="fr">Français</option>
     <option value="es">Español</option>
   </select>
+  <script src="/js/websocket.js"></script>
   <script src="/js/game/engine.js"></script>
   <script src="/js/game/input.js"></script>
   <script src="/js/game/scene.js"></script>

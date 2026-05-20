@@ -282,4 +282,60 @@ h1 {
   font-style: italic;
 }
 
+#admin-form,
+#admin-lobby,
+#game-select-form,
+#game-select-lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2rem;
+  background: rgba(22,33,62,0.9);
+  padding: 2.5rem;
+}
+
+#admin-game-name,
+#admin-code,
+#game-code-input {
+  padding: 0.8rem 1.2rem;
+  border: none;
+  background: rgba(255,255,255,0.1);
+  color: #eee;
+  font-size: 1.2rem;
+  text-align: center;
+  outline: none;
+  width: 220px;
+}
+
+#admin-game-name:focus,
+#admin-code:focus,
+#game-code-input:focus {
+  background: rgba(255,255,255,0.15);
+}
+
+.player-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 200px;
+}
+
+.player-list p {
+  padding: 0.4rem 1rem;
+  background: rgba(255,255,255,0.05);
+  color: #ddd;
+  font-size: 1rem;
+}
+
+#admin-lobby-info,
+#game-lobby-info {
+  color: #aaa;
+  font-size: 0.9rem;
+}
+
+#game-waiting {
+  color: #888;
+  font-style: italic;
+}
+
 
