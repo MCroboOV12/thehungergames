@@ -566,6 +566,11 @@ const gameScene = new (class extends Scene {
       }
       if (hitRock) { this.projectiles.splice(i, 1); continue; }
 
+      if (p.dist >= p.maxRange) {
+        this.projectiles.splice(i, 1);
+        continue;
+      }
+
       if (p.owner === 'player') {
         for (const bot of this.bots) {
           if (!bot.alive) continue;
@@ -618,9 +623,7 @@ const gameScene = new (class extends Scene {
         continue;
       }
 
-      if (p.dist >= p.maxRange) {
-        this.projectiles.splice(i, 1);
-      }
+      this.projectiles.splice(i, 1);
     }
 
     if (this.player.hp <= 0 && this.playerAlive) {
