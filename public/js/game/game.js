@@ -66,27 +66,69 @@ function drawItemIcon(ctx, x, y, s, name, color) {
 
   switch (name) {
     case 'Sword': {
-      const hw = s * 0.12;
-      const bl = s * 0.65;
-      ctx.strokeStyle = '#ddd';
-      ctx.fillStyle = '#bbb';
-      ctx.lineWidth = 1;
+      const bl = s * 0.75;
+      const bw = s * 0.2;
+
+      ctx.fillStyle = '#c0c0c0';
       ctx.beginPath();
-      ctx.moveTo(-hw, -bl);
-      ctx.lineTo(0, -bl - s * 0.1);
-      ctx.lineTo(hw, -bl);
+      ctx.moveTo(-bw, -bl);
+      ctx.lineTo(0, -bl - s * 0.15);
+      ctx.lineTo(bw, -bl);
       ctx.closePath();
       ctx.fill();
-      ctx.stroke();
-      ctx.fillStyle = '#999';
-      ctx.fillRect(-hw * 0.5, -bl - s * 0.1, hw, s * 0.1);
-      ctx.fillStyle = color;
-      ctx.fillRect(-s * 0.3, -bl + s * 0.05, s * 0.6, s * 0.1);
-      ctx.fillStyle = '#6d4c41';
-      ctx.fillRect(-s * 0.15, -bl + s * 0.15, s * 0.3, s * 0.5);
-      ctx.strokeStyle = '#555';
+      ctx.strokeStyle = '#999';
       ctx.lineWidth = 0.5;
-      ctx.strokeRect(-s * 0.15, -bl + s * 0.15, s * 0.3, s * 0.5);
+      ctx.stroke();
+
+      ctx.fillStyle = '#aaa';
+      ctx.fillRect(-bw * 0.4, -bl, bw * 0.8, -bw * 0.3 + bl);
+
+      ctx.fillStyle = '#ddd';
+      ctx.fillRect(-bw * 0.3, -bl + s * 0.05, bw * 0.6, s * 0.35);
+
+      ctx.strokeStyle = '#999';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.moveTo(-bw, -bl + s * 0.1);
+      ctx.lineTo(bw, -bl + s * 0.1);
+      ctx.stroke();
+
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-bw * 0.5, -bl - s * 0.05);
+      ctx.lineTo(0, -bl - s * 0.12);
+      ctx.lineTo(bw * 0.5, -bl - s * 0.05);
+      ctx.stroke();
+
+      const guardY = -bl + s * 0.05;
+      ctx.fillStyle = '#8d6e63';
+      ctx.fillRect(-s * 0.35, guardY, s * 0.7, s * 0.08);
+      ctx.strokeStyle = '#6d4c41';
+      ctx.lineWidth = 0.5;
+      ctx.strokeRect(-s * 0.35, guardY, s * 0.7, s * 0.08);
+
+      ctx.fillStyle = '#5d4037';
+      ctx.fillRect(-s * 0.12, guardY + s * 0.08, s * 0.24, s * 0.42);
+
+      for (let i = 0; i < 5; i++) {
+        const wrapY = guardY + s * 0.1 + i * s * 0.07;
+        ctx.strokeStyle = i % 2 === 0 ? '#4e342e' : '#6d4c41';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(-s * 0.1, wrapY);
+        ctx.lineTo(s * 0.1, wrapY + s * 0.03);
+        ctx.stroke();
+      }
+
+      const pommelY = guardY + s * 0.5;
+      ctx.fillStyle = '#888';
+      ctx.beginPath();
+      ctx.arc(0, pommelY, s * 0.1, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 0.5;
+      ctx.stroke();
       break;
     }
     case 'Axe': {
