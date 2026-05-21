@@ -38,34 +38,69 @@ class Player extends Entity {
     const cx = this.x + this.width / 2;
     const cy = this.y + this.height / 2;
 
-    const armLen = 26;
+    const armLen = 24;
     const armAngle = 0.5 + Math.sin(this.time * 6) * this.currentSwing;
 
-    const lArmEndX = cx - 16 - Math.cos(armAngle) * armLen;
-    const lArmEndY = cy - 6 + Math.sin(armAngle) * armLen;
-    const rArmEndX = cx + 16 + Math.cos(armAngle) * armLen;
-    const rArmEndY = cy - 6 + Math.sin(armAngle) * armLen;
+    const lArmEndX = cx - 14 - Math.cos(armAngle) * armLen;
+    const lArmEndY = cy + 2 + Math.sin(armAngle) * armLen;
+    const rArmEndX = cx + 14 + Math.cos(armAngle) * armLen;
+    const rArmEndY = cy + 2 + Math.sin(armAngle) * armLen;
 
-    ctx.strokeStyle = '#c42e47';
-    ctx.lineWidth = 6;
+    const skin = '#d4a574';
+    const hairColor = '#5d4037';
+
+    ctx.strokeStyle = skin;
+    ctx.lineWidth = 5;
     ctx.lineCap = 'round';
+
     ctx.beginPath();
-    ctx.moveTo(cx - 16, cy - 6);
+    ctx.moveTo(cx - 14, cy + 2);
     ctx.lineTo(lArmEndX, lArmEndY);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(cx + 16, cy - 6);
+    ctx.moveTo(cx + 14, cy + 2);
     ctx.lineTo(rArmEndX, rArmEndY);
     ctx.stroke();
 
+    const headR = 9;
+    const headY = this.y + 11;
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.arc(cx, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = hairColor;
+    ctx.beginPath();
+    ctx.arc(cx, headY - 2, headR, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.fill();
+    ctx.fillRect(cx - headR, headY - headR, headR * 2, headR * 0.3);
+    ctx.beginPath();
+    ctx.arc(cx - headR * 0.4, headY - headR + 2, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + headR * 0.4, headY - headR + 2, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    const bodyX = this.x + 4;
+    const bodyW = this.width - 8;
+    const bodyTop = headY + headR;
+    const bodyBot = this.y + this.height - 4;
     ctx.fillStyle = this.color;
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.beginPath();
+    ctx.moveTo(bodyX + bodyW * 0.2, bodyTop);
+    ctx.lineTo(bodyX, bodyBot);
+    ctx.lineTo(bodyX + bodyW, bodyBot);
+    ctx.lineTo(bodyX + bodyW * 0.8, bodyTop);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
 
-    const eyeY = this.y + 14;
-    const eyeSpacing = 10;
-    const eyeR = 6;
-
+    const eyeY = headY - 1;
+    const eyeSpacing = 5;
+    const eyeR = 4;
     ctx.fillStyle = '#fff';
     ctx.beginPath();
     ctx.arc(cx - eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
@@ -74,20 +109,20 @@ class Player extends Entity {
     ctx.arc(cx + eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#222';
+    ctx.fillStyle = '#3e2723';
     ctx.beginPath();
-    ctx.arc(cx - eyeSpacing + 1, eyeY + 1, 3, 0, Math.PI * 2);
+    ctx.arc(cx - eyeSpacing + 1, eyeY + 1, 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(cx + eyeSpacing + 1, eyeY + 1, 3, 0, Math.PI * 2);
+    ctx.arc(cx + eyeSpacing + 1, eyeY + 1, 2, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#b02a3e';
+    ctx.fillStyle = skin;
     ctx.beginPath();
-    ctx.arc(lArmEndX, lArmEndY, 4, 0, Math.PI * 2);
+    ctx.arc(lArmEndX, lArmEndY, 3.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(rArmEndX, rArmEndY, 4, 0, Math.PI * 2);
+    ctx.arc(rArmEndX, rArmEndY, 3.5, 0, Math.PI * 2);
     ctx.fill();
   }
 }

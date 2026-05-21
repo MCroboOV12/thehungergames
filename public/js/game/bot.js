@@ -358,49 +358,90 @@ class Bot extends Entity {
       drawItemIcon(ctx, cx + 20, cy - 10, 18, heldItem.name, heldItem.color);
     }
 
+    const skin = '#c9a06c';
     const armLen = 22;
     const armAngle = 0.3;
 
-    const lArmEndX = cx - 16 - Math.cos(armAngle) * armLen;
-    const lArmEndY = cy - 4 + Math.sin(armAngle) * armLen;
+    const lArmEndX = cx - 14 - Math.cos(armAngle) * armLen;
+    const lArmEndY = cy + 2 + Math.sin(armAngle) * armLen;
 
-    ctx.strokeStyle = '#6d4c41';
-    ctx.lineWidth = 6;
+    ctx.strokeStyle = skin;
+    ctx.lineWidth = 5;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(cx - 16, cy - 4);
+    ctx.moveTo(cx - 14, cy + 2);
     ctx.lineTo(lArmEndX, lArmEndY);
     ctx.stroke();
 
-    const rArmEndX = cx + 16 + Math.cos(armAngle) * armLen;
-    const rArmEndY = cy - 4 + Math.sin(armAngle) * armLen;
+    const rArmEndX = cx + 14 + Math.cos(armAngle) * armLen;
+    const rArmEndY = cy + 2 + Math.sin(armAngle) * armLen;
     ctx.beginPath();
-    ctx.moveTo(cx + 16, cy - 4);
+    ctx.moveTo(cx + 14, cy + 2);
     ctx.lineTo(rArmEndX, rArmEndY);
     ctx.stroke();
 
     const bodyColor = this.hurtTimer > 0 ? '#fff' : this.color;
+    const headR = 9;
+    const headY = this.y + 11;
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.arc(cx, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#4e342e';
+    ctx.beginPath();
+    ctx.arc(cx, headY - 2, headR, Math.PI * 1.15, Math.PI * 1.85);
+    ctx.fill();
+    ctx.fillRect(cx - headR, headY - headR, headR * 2, headR * 0.3);
+    ctx.beginPath();
+    ctx.arc(cx - headR * 0.4, headY - headR + 2, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx + headR * 0.4, headY - headR + 2, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    const bodyX = this.x + 4;
+    const bodyW = this.width - 8;
+    const bodyTop = headY + headR;
+    const bodyBot = this.y + this.height - 4;
     ctx.fillStyle = bodyColor;
-    ctx.fillRect(this.x, this.y, this.width, this.height);
+    ctx.beginPath();
+    ctx.moveTo(bodyX + bodyW * 0.2, bodyTop);
+    ctx.lineTo(bodyX, bodyBot);
+    ctx.lineTo(bodyX + bodyW, bodyBot);
+    ctx.lineTo(bodyX + bodyW * 0.8, bodyTop);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.15)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
 
-    const eyeY = this.y + 14;
-    const eyeSpacing = 10;
-
+    const eyeY = headY - 1;
+    const eyeSpacing = 5;
+    const eyeR = 4;
     ctx.fillStyle = '#fff';
     ctx.beginPath();
-    ctx.arc(cx - eyeSpacing, eyeY, 5, 0, Math.PI * 2);
+    ctx.arc(cx - eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(cx + eyeSpacing, eyeY, 5, 0, Math.PI * 2);
+    ctx.arc(cx + eyeSpacing, eyeY, eyeR, 0, Math.PI * 2);
     ctx.fill();
 
-    const pupilColor = this.hurtTimer > 0 ? '#e94560' : '#222';
+    const pupilColor = this.hurtTimer > 0 ? '#e94560' : '#3e2723';
     ctx.fillStyle = pupilColor;
     ctx.beginPath();
-    ctx.arc(cx - eyeSpacing - 1, eyeY + 1, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx - eyeSpacing + 1, eyeY + 1, 2, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.arc(cx + eyeSpacing - 1, eyeY + 1, 2.5, 0, Math.PI * 2);
+    ctx.arc(cx + eyeSpacing + 1, eyeY + 1, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = skin;
+    ctx.beginPath();
+    ctx.arc(lArmEndX, lArmEndY, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(rArmEndX, rArmEndY, 3.5, 0, Math.PI * 2);
     ctx.fill();
 
     const barW = 36;
