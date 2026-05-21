@@ -90,28 +90,61 @@ function drawItemIcon(ctx, x, y, s, name, color) {
       break;
     }
     case 'Axe': {
-      ctx.fillStyle = '#8d6e63';
-      ctx.fillRect(-s * 0.08, -s * 0.2, s * 0.16, s * 0.7);
+      const handleLen = s * 0.75;
       ctx.strokeStyle = '#6d4c41';
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(-s * 0.08, -s * 0.2, s * 0.16, s * 0.7);
+      ctx.lineWidth = s * 0.14;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(0, handleLen * 0.5);
+      ctx.lineTo(0, -handleLen * 0.15);
+      ctx.stroke();
+      ctx.strokeStyle = '#5d4037';
+      ctx.lineWidth = s * 0.06;
+      ctx.beginPath();
+      ctx.moveTo(0, handleLen * 0.35);
+      ctx.lineTo(0, -handleLen * 0.1);
+      ctx.stroke();
+
+      const headTop = -handleLen * 0.15;
+      const headBot = headTop + s * 0.4;
+      const headW = s * 0.55;
+      ctx.fillStyle = '#bbb';
+      ctx.beginPath();
+      ctx.moveTo(0, headTop - 2);
+      ctx.lineTo(-headW, headBot - s * 0.05);
+      ctx.quadraticCurveTo(-headW - s * 0.1, headBot + s * 0.05, -headW * 0.5, headBot + s * 0.12);
+      ctx.lineTo(0, headBot - s * 0.05);
+      ctx.closePath();
+      ctx.fill();
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(-s * 0.55, -s * 0.05);
-      ctx.lineTo(0, -s * 0.6);
-      ctx.lineTo(s * 0.55, -s * 0.05);
+      ctx.moveTo(0, headTop - 2);
+      ctx.lineTo(headW, headBot - s * 0.05);
+      ctx.quadraticCurveTo(headW + s * 0.1, headBot + s * 0.05, headW * 0.5, headBot + s * 0.12);
+      ctx.lineTo(0, headBot - s * 0.05);
       ctx.closePath();
       ctx.fill();
+
+      ctx.fillStyle = '#ddd';
+      ctx.beginPath();
+      ctx.moveTo(0, headTop - 1);
+      ctx.lineTo(headW * 0.7, headBot - s * 0.03);
+      ctx.lineTo(headW * 0.3, headBot - s * 0.03);
+      ctx.closePath();
+      ctx.fill();
+
       ctx.strokeStyle = '#888';
       ctx.lineWidth = 0.5;
-      ctx.stroke();
-      ctx.fillStyle = '#aaa';
       ctx.beginPath();
-      ctx.moveTo(-s * 0.35, -s * 0.1);
-      ctx.lineTo(0, -s * 0.45);
-      ctx.lineTo(s * 0.35, -s * 0.1);
-      ctx.closePath();
-      ctx.fill();
+      ctx.moveTo(0, headTop - 2);
+      ctx.lineTo(-headW, headBot - s * 0.05);
+      ctx.quadraticCurveTo(-headW - s * 0.1, headBot + s * 0.05, -headW * 0.5, headBot + s * 0.12);
+      ctx.lineTo(0, headBot - s * 0.05);
+      ctx.moveTo(0, headTop - 2);
+      ctx.lineTo(headW, headBot - s * 0.05);
+      ctx.quadraticCurveTo(headW + s * 0.1, headBot + s * 0.05, headW * 0.5, headBot + s * 0.12);
+      ctx.lineTo(0, headBot - s * 0.05);
+      ctx.stroke();
       break;
     }
     case 'Bow': {
