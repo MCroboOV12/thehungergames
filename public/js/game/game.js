@@ -66,13 +66,14 @@ function drawItemIcon(ctx, x, y, s, name, color) {
 
   switch (name) {
     case 'Sword': {
-      const bl = s * 0.75;
-      const bw = s * 0.2;
+      const sc = 0.4;
+      const bl = s * 0.65 * sc;
+      const bw = s * 0.2 * sc;
 
       ctx.fillStyle = '#c0c0c0';
       ctx.beginPath();
       ctx.moveTo(-bw, -bl);
-      ctx.lineTo(0, -bl - s * 0.15);
+      ctx.lineTo(0, -bl - s * 0.15 * sc);
       ctx.lineTo(bw, -bl);
       ctx.closePath();
       ctx.fill();
@@ -81,50 +82,50 @@ function drawItemIcon(ctx, x, y, s, name, color) {
       ctx.stroke();
 
       ctx.fillStyle = '#aaa';
-      ctx.fillRect(-bw * 0.4, -bl, bw * 0.8, -bw * 0.3 + bl);
+      ctx.fillRect(-bw * 0.4, -bl, bw * 0.8, bl - bw * 0.3 * sc);
 
       ctx.fillStyle = '#ddd';
-      ctx.fillRect(-bw * 0.3, -bl + s * 0.05, bw * 0.6, s * 0.35);
+      ctx.fillRect(-bw * 0.3, -bl + s * 0.05 * sc, bw * 0.6, s * 0.35 * sc);
 
       ctx.strokeStyle = '#999';
       ctx.lineWidth = 0.5;
       ctx.beginPath();
-      ctx.moveTo(-bw, -bl + s * 0.1);
-      ctx.lineTo(bw, -bl + s * 0.1);
+      ctx.moveTo(-bw, -bl + s * 0.1 * sc);
+      ctx.lineTo(bw, -bl + s * 0.1 * sc);
       ctx.stroke();
 
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.moveTo(-bw * 0.5, -bl - s * 0.05);
-      ctx.lineTo(0, -bl - s * 0.12);
-      ctx.lineTo(bw * 0.5, -bl - s * 0.05);
+      ctx.moveTo(-bw * 0.5, -bl - s * 0.05 * sc);
+      ctx.lineTo(0, -bl - s * 0.12 * sc);
+      ctx.lineTo(bw * 0.5, -bl - s * 0.05 * sc);
       ctx.stroke();
 
-      const guardY = -bl + s * 0.05;
+      const guardY = -bl + s * 0.05 * sc;
       ctx.fillStyle = '#8d6e63';
-      ctx.fillRect(-s * 0.35, guardY, s * 0.7, s * 0.08);
+      ctx.fillRect(-s * 0.35 * sc, guardY, s * 0.7 * sc, s * 0.08 * sc);
       ctx.strokeStyle = '#6d4c41';
       ctx.lineWidth = 0.5;
-      ctx.strokeRect(-s * 0.35, guardY, s * 0.7, s * 0.08);
+      ctx.strokeRect(-s * 0.35 * sc, guardY, s * 0.7 * sc, s * 0.08 * sc);
 
       ctx.fillStyle = '#5d4037';
-      ctx.fillRect(-s * 0.12, guardY + s * 0.08, s * 0.24, s * 0.42);
+      ctx.fillRect(-s * 0.12 * sc, guardY + s * 0.08 * sc, s * 0.24 * sc, s * 0.42 * sc);
 
       for (let i = 0; i < 5; i++) {
-        const wrapY = guardY + s * 0.1 + i * s * 0.07;
+        const wrapY = guardY + s * 0.1 * sc + i * s * 0.07 * sc;
         ctx.strokeStyle = i % 2 === 0 ? '#4e342e' : '#6d4c41';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(-s * 0.1, wrapY);
-        ctx.lineTo(s * 0.1, wrapY + s * 0.03);
+        ctx.moveTo(-s * 0.1 * sc, wrapY);
+        ctx.lineTo(s * 0.1 * sc, wrapY + s * 0.03 * sc);
         ctx.stroke();
       }
 
-      const pommelY = guardY + s * 0.5;
+      const pommelY = guardY + s * 0.5 * sc;
       ctx.fillStyle = '#888';
       ctx.beginPath();
-      ctx.arc(0, pommelY, s * 0.1, 0, Math.PI * 2);
+      ctx.arc(0, pommelY, s * 0.1 * sc, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#666';
       ctx.lineWidth = 0.5;
@@ -132,60 +133,61 @@ function drawItemIcon(ctx, x, y, s, name, color) {
       break;
     }
     case 'Axe': {
-      const handleLen = s * 1.0;
+      const sc = 0.55;
+      const handleLen = s * 0.6 * sc;
       ctx.strokeStyle = '#6d4c41';
-      ctx.lineWidth = s * 0.14;
+      ctx.lineWidth = s * 0.14 * sc;
       ctx.lineCap = 'round';
       ctx.beginPath();
       ctx.moveTo(0, handleLen * 0.5);
       ctx.lineTo(0, -handleLen * 0.15);
       ctx.stroke();
       ctx.strokeStyle = '#5d4037';
-      ctx.lineWidth = s * 0.06;
+      ctx.lineWidth = s * 0.06 * sc;
       ctx.beginPath();
       ctx.moveTo(0, handleLen * 0.35);
       ctx.lineTo(0, -handleLen * 0.1);
       ctx.stroke();
 
-      const headTop = -handleLen * 0.15;
-      const headBot = headTop + s * 0.4;
-      const headW = s * 0.55;
+      const headTop = -handleLen * 0.15 - s * 0.02 * sc;
+      const headBot = headTop + s * 0.35 * sc;
+      const headW = s * 0.45 * sc;
       ctx.fillStyle = '#bbb';
       ctx.beginPath();
-      ctx.moveTo(0, headTop - 2);
-      ctx.lineTo(-headW, headBot - s * 0.05);
-      ctx.quadraticCurveTo(-headW - s * 0.1, headBot + s * 0.05, -headW * 0.5, headBot + s * 0.12);
-      ctx.lineTo(0, headBot - s * 0.05);
+      ctx.moveTo(0, headTop);
+      ctx.lineTo(-headW, headBot - s * 0.04 * sc);
+      ctx.quadraticCurveTo(-headW - s * 0.08 * sc, headBot + s * 0.04 * sc, -headW * 0.5, headBot + s * 0.1 * sc);
+      ctx.lineTo(0, headBot - s * 0.04 * sc);
       ctx.closePath();
       ctx.fill();
       ctx.fillStyle = color;
       ctx.beginPath();
-      ctx.moveTo(0, headTop - 2);
-      ctx.lineTo(headW, headBot - s * 0.05);
-      ctx.quadraticCurveTo(headW + s * 0.1, headBot + s * 0.05, headW * 0.5, headBot + s * 0.12);
-      ctx.lineTo(0, headBot - s * 0.05);
+      ctx.moveTo(0, headTop);
+      ctx.lineTo(headW, headBot - s * 0.04 * sc);
+      ctx.quadraticCurveTo(headW + s * 0.08 * sc, headBot + s * 0.04 * sc, headW * 0.5, headBot + s * 0.1 * sc);
+      ctx.lineTo(0, headBot - s * 0.04 * sc);
       ctx.closePath();
       ctx.fill();
 
       ctx.fillStyle = '#ddd';
       ctx.beginPath();
-      ctx.moveTo(0, headTop - 1);
-      ctx.lineTo(headW * 0.7, headBot - s * 0.03);
-      ctx.lineTo(headW * 0.3, headBot - s * 0.03);
+      ctx.moveTo(0, headTop + s * 0.01 * sc);
+      ctx.lineTo(headW * 0.7, headBot - s * 0.02 * sc);
+      ctx.lineTo(headW * 0.3, headBot - s * 0.02 * sc);
       ctx.closePath();
       ctx.fill();
 
       ctx.strokeStyle = '#888';
       ctx.lineWidth = 0.5;
       ctx.beginPath();
-      ctx.moveTo(0, headTop - 2);
-      ctx.lineTo(-headW, headBot - s * 0.05);
-      ctx.quadraticCurveTo(-headW - s * 0.1, headBot + s * 0.05, -headW * 0.5, headBot + s * 0.12);
-      ctx.lineTo(0, headBot - s * 0.05);
-      ctx.moveTo(0, headTop - 2);
-      ctx.lineTo(headW, headBot - s * 0.05);
-      ctx.quadraticCurveTo(headW + s * 0.1, headBot + s * 0.05, headW * 0.5, headBot + s * 0.12);
-      ctx.lineTo(0, headBot - s * 0.05);
+      ctx.moveTo(0, headTop);
+      ctx.lineTo(-headW, headBot - s * 0.04 * sc);
+      ctx.quadraticCurveTo(-headW - s * 0.08 * sc, headBot + s * 0.04 * sc, -headW * 0.5, headBot + s * 0.1 * sc);
+      ctx.lineTo(0, headBot - s * 0.04 * sc);
+      ctx.moveTo(0, headTop);
+      ctx.lineTo(headW, headBot - s * 0.04 * sc);
+      ctx.quadraticCurveTo(headW + s * 0.08 * sc, headBot + s * 0.04 * sc, headW * 0.5, headBot + s * 0.1 * sc);
+      ctx.lineTo(0, headBot - s * 0.04 * sc);
       ctx.stroke();
       break;
     }
