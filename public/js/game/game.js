@@ -66,7 +66,7 @@ function drawItemIcon(ctx, x, y, s, name, color) {
 
   switch (name) {
     case 'Sword': {
-      const sc = 0.4;
+      const sc = 0.55;
       const bl = s * 0.65 * sc;
       const bw = s * 0.2 * sc;
 
@@ -133,8 +133,8 @@ function drawItemIcon(ctx, x, y, s, name, color) {
       break;
     }
     case 'Axe': {
-      const sc = 0.55;
-      const handleLen = s * 0.6 * sc;
+      const sc = 0.75;
+      const handleLen = s * 0.7;
       ctx.strokeStyle = '#6d4c41';
       ctx.lineWidth = s * 0.14 * sc;
       ctx.lineCap = 'round';
