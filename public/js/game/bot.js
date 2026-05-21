@@ -242,7 +242,7 @@ class Bot extends Entity {
       vy: Math.sin(angle) * speed,
       dist: 0, maxRange,
       damage, icon, color: icon === 'Arrow' ? '#8bc34a' : '#ef5350',
-      owner: 'bot', ownerIndex: this.index,
+      owner: 'bot', ownerIndex: this.index, angle,
     });
   }
 

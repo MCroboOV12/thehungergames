@@ -761,7 +761,7 @@ const gameScene = new (class extends Scene {
         vx: Math.cos(angle) * 400,
         vy: Math.sin(angle) * 400,
         dist: 0, maxRange: 250,
-        damage: 50, icon: 'Knife', color: '#ef5350', owner: 'player',
+        damage: 50, icon: 'Knife', color: '#ef5350', owner: 'player', angle,
       });
       return;
     }
@@ -869,7 +869,7 @@ const gameScene = new (class extends Scene {
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       dist: 0, maxRange,
-      damage, icon: 'Arrow', color: '#8bc34a', owner: 'player',
+      damage, icon: 'Arrow', color: '#8bc34a', owner: 'player', angle,
     });
   }
 
@@ -1036,7 +1036,11 @@ const gameScene = new (class extends Scene {
 
     for (const p of this.projectiles) {
       if (!this._isVisible(p.x, p.y, 20)) continue;
-      drawItemIcon(ctx, p.x, p.y, 14, p.icon, p.color);
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      if (p.angle !== undefined) ctx.rotate(p.angle + Math.PI / 2);
+      drawItemIcon(ctx, 0, 0, 14, p.icon, p.color);
+      ctx.restore();
     }
 
     if (this.phase === 'countdown') {
