@@ -90,7 +90,7 @@ function drawItemIcon(ctx, x, y, s, name, color) {
       break;
     }
     case 'Axe': {
-      const handleLen = s * 0.75;
+      const handleLen = s * 1.0;
       ctx.strokeStyle = '#6d4c41';
       ctx.lineWidth = s * 0.14;
       ctx.lineCap = 'round';
